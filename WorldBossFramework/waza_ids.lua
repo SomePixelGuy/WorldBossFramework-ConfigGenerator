@@ -1,0 +1,121 @@
+-- EPalWazaID values from the Palworld 0.6.4 SDK. Enum values are sequential.
+local names = {
+    "None", "Human_Punch", "WorkAttack", "Throw",
+    "Scratch", "EnergyShot", "Unique_Anubis_LowRoundKick", "Unique_Anubis_GroundPunch",
+    "Unique_Anubis_Tackle", "Unique_Deer_PushupHorn", "HyperBeam", "PowerShot",
+    "PowerBall", "Unique_Garm_Bite", "Intimidate", "Unique_Boar_Tackle",
+    "Unique_PinkCat_CatPunch", "Unique_FlowerDinosaur_Whip", "Unique_SheepBall_Roll", "Unique_ChickenPal_ChickenPeck",
+    "Unique_Gorilla_GroundPunch", "Unique_Grassmammoth_Earthquake", "AirCanon", "Unique_GrassPanda_MusclePunch",
+    "Unique_RobinHood_BowSnipe", "Unique_Alpaca_Tackle", "Unique_KingAlpaca_BodyPress", "Unique_Werewolf_Scratch",
+    "Unique_FengyunDeeper_CloudTempest", "Unique_Baphomet_SwallowKite", "Unique_HerculesBeetle_BeetleTackle", "Unique_HawkBird_Storm",
+    "Unique_Eagle_GlidingNail", "SelfDestruct", "SelfDestruct_Bee", "SelfExplosion",
+    "Unique_Garm_BiteV2", "Unique_GuardianDog_Bite", "Unique_GuardianDog_BiteV2", "RadiantBarrage",
+    "FireBlast", "Flamethrower", "FireBall", "FlareArrow",
+    "FireSeed", "Unique_Horus_FlareBird", "FlareTornado", "Inferno",
+    "Unique_FireKirin_Tackle", "Unique_AmaterasuWolf_FireCharge", "Unique_VolcanicMonster_MagmaAttack", "Unique_FlameBuffalo_FlameHorn",
+    "Eruption", "FlameWall", "FlameFunnel", "Unique_AmaterasuWolf_Bite",
+    "Unique_AmaterasuWolf_BiteV2", "WaterGun", "WaterWave", "HydroPump",
+    "WaterBall", "TidalWave", "AquaJet", "BubbleShot",
+    "AcidRain", "SeaGush", "RipTide", "DiversionLaser",
+    "HydroSlicer", "Unique_KingWhale_HomingBubble", "Unique_KingWhale_AquaBlade", "CreepingBubble",
+    "Unique_KingWhale_Ripple", "Unique_KingWhale_Maelstrom", "Unique_KingWhale_TidalWave", "Unique_KingWhale_AquaTornado",
+    "Unique_KingWhale_TidalBore", "Unique_KingWhale_SuperTidalBore", "Unique_KingWhale_WaveTackle", "Unique_KingWhale_Breaching",
+    "Unique_KingWhale_Breaching_P3", "Unique_KingWhale_BaseCampAttack", "Unique_BluePlatypus_Toboggan", "Unique_TentacleTurtle_HydroSpin",
+    "Unique_SakuraSaurus_Water_SplashTackle", "WindCutter", "GrassTornado", "SolarBeam",
+    "SeedMachinegun", "SeedMine", "RootAttack", "SpecialCutter",
+    "CrossWind", "ReflectiveShuriken", "HealingTree", "Unique_QueenBee_SpinLance",
+    "ThunderRain", "ThunderBall", "LineThunder", "CrossThunder",
+    "ThreeThunder", "ElecWave", "Thunderbolt", "ThunderFunnel",
+    "SpreadPulse", "LockonLaser", "LightningStrike", "ThunderSpear",
+    "Unique_ElecPanda_ElecScratch", "Unique_Kirin_LightningTackle", "Unique_FlowerDinosaur_Electric_ThunderWhip", "Unique_ThunderDog_Bite",
+    "Unique_ThunderDog_BiteV2", "IceMissile", "BlizzardLance", "SnowStorm",
+    "IcicleThrow", "IceBlade", "Unique_IceHorse_IceBladeAttack", "Unique_IceNarwhal_JumpingHorn",
+    "Unique_KingAlpaca_Ice_IcePress", "SandTornado", "ThrowRock", "RockLance",
+    "MudShot", "StoneShotgun", "Unique_DrillGame_ShellAttack", "Unique_Deer_Ground_DirtyHorn",
+    "Unique_Gorilla_Ground_EarthPunch", "Unique_GoldenHorse_Bite", "Unique_GoldenHorse_BiteV2", "DarkLaser",
+    "DarkWave", "ShadowBall", "Psychokinesis", "PoisonShot",
+    "GhostFlame", "GravityShot", "Unique_DarkCrow_TelePoke", "Unique_Baphomet_Dark_DarkKite",
+    "Unique_IceHorse_Dark_DarkBladeAttack", "Unique_AmaterasuWolf_Dark_Bite", "Unique_AmaterasuWolf_Dark_BiteV2", "Unique_BlackPuppy_Bite",
+    "Unique_BlackPuppy_BiteV2", "DragonMeteor", "DragonBreath", "DragonWave",
+    "DragonCanon", "Unique_FairyDragon_FairyTornado", "Funnel_DreamDemon", "Funnel_RaijinDaughter",
+    "Funnel_RaijinDaughter_Water", "StardustArrow", "Tremor", "FrostBreath",
+    "DiamondFall", "BeamSlicer", "Commet", "DarkBall",
+    "PoisonFog", "DarkLegion", "DarkCanon", "DarkArrow",
+    "DarkPulse", "Apocalypse", "StarMine", "AirBlade",
+    "HolyBlast", "RootLance", "LineGeyser", "WallSplash",
+    "TriSpark", "ThunderStorm", "SandTwister", "IcicleLine",
+    "ThreeCommet", "CommetRain", "BlastCanon", "ChargeCanon",
+    "RangeThunder", "Railbolt", "ShokeiLaser", "BubbleShower",
+    "WaterBalloon", "IciclePierce", "DoubleIcicleThrow", "IceAge",
+    "RaidCutter", "WindEdge", "FlareTwister", "TrisRing",
+    "Unique_BirdDragon_FireBreath", "Unique_BlackMetalDragon_FirePunch", "Unique_DarkScorpion_Pierce", "Unique_GhostBeast_Tossin",
+    "Unique_JetDragon_JumpBeam", "Unique_ThunderBird_ThunderStorm", "Unique_Yeti_SnowBall", "Unique_NaughtyCat_CatPress",
+    "Unique_IceDeer_IceHorn", "Unique_KingBahamut_AirCrash", "Unique_Manticore_InfernoStrike", "Unique_SoldierBee_NeedleLance",
+    "Unique_ThunderDog_InazumaShorai", "Unique_BlackCentaur_TwoSpearRushes", "Unique_BlackGriffon_TackleLaser", "Unique_SakuraSaurus_SideTackle",
+    "Unique_ThunderDragonMan_ThunderSwordAttack", "Unique_RedArmorBird_TriplePeck", "Unique_CaptainPenguin_BodySlide", "Unique_CaptainPenguin_Black_BodySlide_Electric",
+    "Unique_Ronin_Iai", "Unique_GrassRabbitMan_GrassRoundKick", "Unique_SaintCentaur_OneSpearRushes", "Unique_Umihebi_WindingTackle",
+    "Unique_WeaselDragon_FlyingTackle", "Unique_WhiteTiger_IceScratch", "Unique_IceCrocodile_SpitAttack", "Unique_BirdDragon_Ice_IceBreath",
+    "Unique_FireKirin_Dark_DarkTossin", "Unique_VolcanicMonster_Ice_IceAttack", "Unique_LeafMomonga_SomerSault", "Unique_Yeti_Grass_GrassBall",
+    "Unique_GrassPanda_Electric_ElectricPunch", "Unique_NightLady_WarpBeam", "Unique_NightLady_WarpBeam_Straight", "Unique_NightLady_FlameNightmare",
+    "Unique_MoonQueen_MoonBeam", "Unique_MoonQueen_MoonBlade", "Unique_KingBahamut_ArmSmash", "Unique_WingGolem_RoundCutter",
+    "Unique_ScorpionMan_Uppercut", "Unique_FeatherOstrich_Tossin", "Unique_DarkAlien_JumpScractch", "Unique_SifuDog_Counter",
+    "Unique_ThunderDragonMan_NumerousSwordAttack", "Unique_ElecPanda_GatlingAttack", "Unique_LilyQueen_LilyHealing", "Unique_LilyQueen_LilyHealing_Boss",
+    "Unique_LilyQueen_WindBarrier", "Unique_Horus_PerfectStorm", "Unique_BlackGriffon_TackleLaser2", "Unique_MoonQueen_IceMoonBlade",
+    "Unique_DarkMechaDragon_SetFunnel", "Unique_DarkMechaDragon_ConvergentBeam", "Unique_DarkMechaDragon_FunnelLaser", "Unique_DarkMechaDragon_BeamSlash",
+    "Unique_DarkMechaDragon_WarpComet", "Unique_Umihebi_Fire_FireWindingTackle", "Unique_PurpleSpider_SpiderRaid", "Unique_MysteryMask_LifeSteal",
+    "Unique_GrimGirl_BrutalMachete", "Unique_SnowTigerBeastman_TrampleSlash", "Unique_SnowTigerBeastman_SnowImpact", "Unique_WhiteShieldDragon_ShieldTackle",
+    "Unique_NightBlueHorse_DeathStep", "Unique_BlueThunderHorse_FlashDash", "Unique_WhiteDeer_HolyPillar", "Unique_GoldenHorse_StoneDash",
+    "Unique_WhiteTiger_Ground_IronScratch", "Unique_FengyunDeeper_Electric_ThunderTempest", "Unique_Werewolf_Ice_SnowScratch", "Unique_Horus_Water_AquaStorm",
+    "Unique_AmaterasuWolf_Dark_DarkCharge", "Unique_OctopursGirl_InkJet", "Unique_StuffedShark_HiddenWeapon", "Unique_Plesiosaur_LongBreath",
+    "Unique_TropicalOstrich_DashKick", "Unique_GhostAnglerfish_SweepBait", "Unique_GhostAnglerfish_Fire_SweepBait_Fire", "Unique_PoseidonOrca_TorrentLaser",
+    "Unique_VolcanoDragon_VolcanicLaser", "Unique_VolcanoDragon_MagmaSpit", "Unique_Sekhmet_RollingScratch", "Unique_Sekhmet_SomersaultScratch",
+    "Unique_LegendDeer_WarpPillarBurst", "Unique_LegendDeer_BarrierRelease_Normal", "Unique_LegendDeer_BarrierRelease_Grass", "Unique_LegendDeer_BarrierRelease_Water",
+    "Unique_LegendDeer_RadiantPurge", "Unique_LegendDeer_RadiantWingRush", "Unique_LegendDeer_RadiantPurge_Otomo", "PredatorBeam",
+    "PredatorWave", "PredatorLockon", "RockBeat", "IceWall",
+    "WindBurst", "Unique_SamuraiDog_Bite", "Unique_SamuraiDog_BiteV2", "Unique_NightBlueHorse_Neutral_Tossin",
+    "Unique_NightBlueHorse_Neutral_AirStep", "Unique_Kirin_Ice_IceTackle", "Unique_ThunderDog_Ice_KoriShorai", "Unique_ScorpionMan_Erectric_UpperThunder",
+    "Unique_ThunderDog_Ice_Bite", "Unique_ThunderDog_Ice_BiteV2", "Unique_BluePlatypus_Toboggan_Fire", "Unique_NightBlueHorse_Tossin",
+    "Unique_BlueThunderHorse_Tossin", "Unique_MonochromeQueen_BalletJump", "Unique_CuteMole_DiggingAttack", "Unique_SamuraiDog_DashSlash",
+    "Unique_GrassGolem_ArmCannon", "Unique_GrassGolem_RocketPunch", "Unique_SnakeGirl_SnakeShot", "Unique_MummyPal_MummyAttack",
+    "Unique_ClownRabbit_TrickShow", "Unique_CubeTurtle_CubePress", "Unique_SumoDog_SumoStomp", "Unique_ElecSnail_ShellCharge",
+    "Unique_LotusDragon_LotusBloom", "Unique_DomeArmorDragon_ExplosiveMissile", "Unique_GhostDragon_TailSlash", "Unique_GhostDragon_PhosphorousBeam",
+    "Unique_GrassMinotaur_BullRush", "Unique_GrassMinotaur_Ice_BullRush", "Unique_PandaGirl_RapidKick", "Unique_LanternButler_LanternFlame",
+    "Unique_RockBeast_RockHorn", "Unique_RockBeast_Ice_IceHorn", "Unique_ElecPomeranian_Bite", "Unique_ElecPomeranian_BiteV2",
+    "Unique_BlueSkyDragon_Tossin", "Unique_BlueSkyDragon_SweepBreath", "Unique_BlueSkyDragon_DrainStorm", "Unique_RedFlowerBird_JumpKick",
+    "Unique_WhiteDeer_Dark_DarkPillar", "Unique_GrassGolem_Dark_DarkArmCannon", "Unique_WingGolem_Fire_FlameCutter", "Unique_ThunderBird_Ice_SnowStrom",
+    "Unique_CubeTurtle_Neutral_HolyPress", "Unique_VolcanoDragon_Ice_IcicleSpit", "Unique_VolcanoDragon_Ice_IceLaser", "Unique_GrassMinotaur_BullRush_Lower",
+    "Unique_GrassMinotaur_Ice_BullRush_Lower", "Unique_Mothman_GiantSpore", "Unique_Mothman_SporeScatter", "Unique_FlowerPrince_PoisonGasDance",
+    "Unique_FlowerPrince_PoisonGasTackle", "Unique_WorldTreeDragon_PaldiumShot", "Unique_WorldTreeDragon_PaldiumCannon", "Unique_WorldTreeDragon_PaldiumExplosion",
+    "Unique_WorldTreeDragon_HaloBeam", "Unique_WorldTreeDragon_BigBang", "Unique_WorldTreeDragon_Supernova", "Unique_WorldTreeDragon_PaldiumRain",
+    "Unique_WorldTreeDragon_HaloCutter", "Unique_WorldTreeDragon_LaserGliding", "Unique_LilyQueen_GYM_Act", "Unique_ThunderDragonMan_GYM_Act",
+    "Unique_MoonQueen_GYM_Act", "Unique_MoonQueen_GYM_Hard_Act", "Unique_BlueSkyDragon_GYM_Act", "BlueThunderHorse_PartnerSkill",
+    "Unique_Ronin_Iai_PartnerSkill", "PoseidonOrca_PartnerSkill_SpearBullet", "PoseidonOrca_PartnerSkill", "GrassGolem_PartnerSkill",
+    "GrassGolem_Dark_PartnerSkill", "Human_Rolling", "Weapon_Use", "Unique_Yakushima_SummonServant",
+    "Unique_Yakushima_EyeTossin", "Unique_Yakushima_MouthTossin", "Unique_YakushimaMonster001_SlimePress_Normal", "Unique_YakushimaMonster001_SlimePress_Leaf",
+    "Unique_YakushimaMonster001_SlimePress_Water", "Unique_YakushimaMonster001_SlimePress_Fire", "Unique_YakushimaMonster001_SlimePress_Dark", "Unique_YakushimaMonster001_SlimePress_Rainbow",
+    "Unique_YakushimaBoss001_Small_DemonEyeCharge", "Unique_YakushimaMonster002_SwordCharge", "Unique_YakushimaMonster003_BatCharge", "Unique_YakushimaBoss001_Green_PhantasmalBolt",
+    "Unique_YakushimaBoss001_Green_PhantasmalEye", "Unique_YakushimaBoss001_Green_PhantasmalSphere", "Unique_YakushimaBoss001_Green_PhantasmalDeathray", "Unique_YakushimaBoss002_PhantasmalBolt",
+    "Unique_YakushimaBoss002_PhantasmalEye", "Unique_YakushimaBoss002_PhantasmalSphere", "Unique_YakushimaBoss002_PhantasmalDeathray", "Unique_YakushimaBoss001_Green_2_PhantasmalBolt",
+    "Unique_YakushimaBoss001_Green_2_PhantasmalEye", "Unique_YakushimaBoss001_Green_2_PhantasmalSphere", "Unique_YakushimaBoss001_Green_2_PhantasmalDeathray", "Unique_YakushimaBoss002_2_PhantasmalBolt",
+    "Unique_YakushimaBoss002_2_PhantasmalEye", "Unique_YakushimaBoss002_2_PhantasmalSphere", "Unique_YakushimaBoss002_2_PhantasmalDeathray",
+}
+
+local by_name = {}
+for index, name in ipairs(names) do by_name[name:lower()] = index - 1 end
+
+local M = { count = #names }
+
+function M.resolve(value)
+    local numeric = tonumber(value)
+    if numeric and numeric == math.floor(numeric) and numeric >= 0 and numeric < #names then
+        return numeric, names[numeric + 1]
+    end
+    local text = tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    local id = by_name[text:lower()]
+    if id == nil then return nil, "unknown EPalWazaID '" .. text .. "'" end
+    return id, names[id + 1]
+end
+
+function M.name(id) return names[(tonumber(id) or -1) + 1] end
+
+return M

@@ -17,7 +17,8 @@
       </div>
     </div>
     <div class="topbar-actions">
-      <div class="privacy-note"><span aria-hidden="true"></span> Runs entirely in your browser</div>
+      <input id="config-file" type="file" accept=".config,.txt,text/plain" hidden>
+      <button class="button button-secondary" id="load-config" type="button">Load spawners.config</button>
       <button class="button button-primary" id="generate-top" type="button">Generate Config</button>
     </div>
   </header>
@@ -29,7 +30,7 @@
           <p class="section-kicker">Encounter queue</p>
           <h2>Spawners <span class="count-badge" id="spawner-count">0</span></h2>
         </div>
-        <button class="icon-button" id="add-spawner" type="button" aria-label="Add spawner" title="Add spawner">+</button>
+        <button class="button button-secondary button-small" id="add-spawner" type="button">Add Spawner</button>
       </div>
       <div class="spawner-list" id="spawner-list"></div>
       <div class="panel-tip">

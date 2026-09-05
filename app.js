@@ -35,6 +35,20 @@
     passiveSkills: ["WorldTree_ATK_DEF", "CoolTimeReduction_Up_1", "CoolTimeReduction_Up_2", "Deffence_up3"]
   });
 
+  const emptyMember = () => ({
+    uid: uid("member"),
+    palId: "",
+    level: 5,
+    designation: "normal",
+    uncapturable: true,
+    scale: 1.5,
+    hpMultiplier: 1,
+    attackMultiplier: 1,
+    defenseMultiplier: 1,
+    activeSkills: ["", "", ""],
+    passiveSkills: ["", "", "", ""]
+  });
+
   const defaultReward = (kind = "item") => ({
     uid: uid("reward"),
     kind,
@@ -43,33 +57,57 @@
     chance: 1
   });
 
-  const defaultSpawner = (number = 1) => ({
-    uid: uid("spawner"),
-    id: number === 1 ? "test_arena" : `world_boss_${number}`,
-    enabled: true,
-    title: number === 1 ? "The Woolen Calamity" : `World Boss ${number}`,
-    firstDefeatTitle: "",
-    autoEnabled: true,
-    queueOrder: number * 10,
-    mapX: number === 1 ? 95 : 0,
-    mapY: number === 1 ? -520 : 0,
-    groundClearance: 100,
-    rotationPitch: 0,
-    rotationYaw: 0,
-    rotationRoll: 0,
-    matchRadius: 5000,
-    respawnPlayerRadius: 15000,
-    memberSpacing: 800,
-    arenaRadius: 15000,
-    blockBuilding: false,
-    shopOfferEnabled: false,
-    shopCurrencyCost: 1000,
-    shopMaxPurchases: 0,
-    shopCooldownSeconds: 0,
-    shopResetSchedule: false,
-    members: [defaultMember()],
-    rewards: [defaultReward("item"), defaultReward("currency")]
-  });
+  function emptySpawner(id = "") {
+    return {
+      uid: uid("spawner"),
+      id,
+      enabled: true,
+      title: "",
+      firstDefeatTitle: "",
+      autoEnabled: false,
+      queueOrder: 1000,
+      mapX: "",
+      mapY: "",
+      groundClearance: 100,
+      rotationPitch: 0,
+      rotationYaw: 0,
+      rotationRoll: 0,
+      matchRadius: 5000,
+      respawnPlayerRadius: 15000,
+      memberSpacing: 800,
+      arenaRadius: 15000,
+      blockBuilding: false,
+      shopOfferEnabled: false,
+      shopCurrencyCost: "",
+      shopMaxPurchases: 0,
+      shopCooldownSeconds: 0,
+      shopResetSchedule: false,
+      members: [],
+      rewards: [],
+      activeMemberUid: null,
+      activeRewardUid: null
+    };
+  }
+
+  function defaultSpawner(number = 1) {
+    const spawner = emptySpawner(number === 1 ? "test_arena" : `world_boss_${number}`);
+    const member = defaultMember();
+    const itemReward = defaultReward("item");
+    const currencyReward = defaultReward("currency");
+    Object.assign(spawner, {
+      title: number === 1 ? "The Woolen Calamity" : `World Boss ${number}`,
+      autoEnabled: true,
+      queueOrder: number * 10,
+      mapX: number === 1 ? 95 : 0,
+      mapY: number === 1 ? -520 : 0,
+      shopCurrencyCost: 1000,
+      members: [member],
+      rewards: [itemReward, currencyReward],
+      activeMemberUid: member.uid,
+      activeRewardUid: itemReward.uid
+    });
+    return spawner;
+  }
 
   const firstSpawner = defaultSpawner();
   const state = {
@@ -89,6 +127,25 @@
 
   const selectedSpawner = () => state.spawners.find((spawner) => spawner.uid === state.selectedUid) || null;
   const valueAttr = (value) => escapeHtml(value ?? "");
+  const copyIcon = () => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>`;
+
+  function selectedMember(spawner) {
+    let member = spawner.members.find((entry) => entry.uid === spawner.activeMemberUid);
+    if (!member) {
+      member = spawner.members[0] || null;
+      spawner.activeMemberUid = member?.uid || null;
+    }
+    return member;
+  }
+
+  function selectedReward(spawner) {
+    let reward = spawner.rewards.find((entry) => entry.uid === spawner.activeRewardUid);
+    if (!reward) {
+      reward = spawner.rewards[0] || null;
+      spawner.activeRewardUid = reward?.uid || null;
+    }
+    return reward;
+  }
 
   function showToast(message) {
     toastElement.textContent = message;
@@ -157,18 +214,32 @@
       return;
     }
     listElement.innerHTML = state.spawners.map((spawner) => `
-      <div class="spawner-row${spawner.uid === state.selectedUid ? " selected" : ""}">
+      <article class="spawner-card${spawner.uid === state.selectedUid ? " selected" : ""}">
+        <button class="spawner-remove" type="button" data-action="remove-spawner" data-uid="${spawner.uid}" aria-label="Remove ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Remove spawner">×</button>
         <button class="spawner-select" type="button" data-action="select-spawner" data-uid="${spawner.uid}">
           <strong>${escapeHtml(spawner.title || "Untitled spawner")}</strong>
           <small>${escapeHtml(spawner.id || "missing_id")}</small>
           <span class="spawner-meta">
-            <span>${spawner.members.length} pal${spawner.members.length === 1 ? "" : "s"}</span>
+            <span>${spawner.members.length} member${spawner.members.length === 1 ? "" : "s"}</span>
             <span>${spawner.rewards.length} reward${spawner.rewards.length === 1 ? "" : "s"}</span>
             ${spawner.enabled ? "" : `<span class="off">disabled</span>`}
           </span>
         </button>
-        <button class="remove-button" type="button" data-action="remove-spawner" data-uid="${spawner.uid}" aria-label="Remove ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Remove spawner">×</button>
-      </div>`).join("");
+        <div class="sidebar-member-list" role="list" aria-label="${escapeHtml(spawner.title || spawner.id || "Spawner")} members">
+          ${spawner.members.length ? spawner.members.map((member, index) => `
+            <div class="sidebar-member-row${member.uid === spawner.activeMemberUid ? " active" : ""}" role="listitem">
+              <button class="sidebar-member-select" type="button" data-action="select-member" data-spawner-uid="${spawner.uid}" data-member-uid="${member.uid}">
+                <span class="member-number">${index + 1}</span>
+                <span class="member-name">${escapeHtml(member.palId || "Pal / NPC ID required")}</span>
+                <span class="member-level">Lv. ${escapeHtml(member.level)}</span>
+              </button>
+              <div class="sidebar-member-actions">
+                <button class="member-icon-button duplicate" type="button" data-action="duplicate-member" data-spawner-uid="${spawner.uid}" data-member-uid="${member.uid}" aria-label="Duplicate member ${index + 1}" title="Duplicate member">${copyIcon()}</button>
+                <button class="member-icon-button remove" type="button" data-action="remove-member" data-spawner-uid="${spawner.uid}" data-member-uid="${member.uid}" aria-label="Remove member ${index + 1}" title="Remove member">×</button>
+              </div>
+            </div>`).join("") : `<div class="sidebar-member-empty">No members configured</div>`}
+        </div>
+      </article>`).join("");
   }
 
   function renderEditor() {
@@ -236,9 +307,9 @@
           ${inputField("Ground clearance", "groundClearance", spawner.groundClearance, { type: "number", min: 10, max: 5000, step: "any", help: "Centimeters above terrain; 10–5,000." })}
         </div>
         <div class="field-grid three">
-          ${inputField("Pitch", "rotationPitch", spawner.rotationPitch, { type: "number", min: -360, max: 360, step: "any" })}
-          ${inputField("Yaw", "rotationYaw", spawner.rotationYaw, { type: "number", min: -360, max: 360, step: "any", help: "Also rotates multi-member placement." })}
-          ${inputField("Roll", "rotationRoll", spawner.rotationRoll, { type: "number", min: -360, max: 360, step: "any" })}
+          ${inputField("Pitch", "rotationPitch", spawner.rotationPitch, { type: "number", min: -360, max: 360, step: "any", help: "Rotates forward/back around the Y axis." })}
+          ${inputField("Yaw", "rotationYaw", spawner.rotationYaw, { type: "number", min: -360, max: 360, step: "any", help: "Rotates left/right around the vertical Z axis and rotates multi-member placement." })}
+          ${inputField("Roll", "rotationRoll", spawner.rotationRoll, { type: "number", min: -360, max: 360, step: "any", help: "Rotates side-to-side around the X axis." })}
         </div>`)
     ].join("");
   }
@@ -247,10 +318,10 @@
     return [
       sectionCard("Encounter ranges", "Distances are measured in Unreal centimeters.", `
         <div class="field-grid">
-          ${inputField("Reward match radius", "matchRadius", spawner.matchRadius, { type: "number", min: 100, max: 20000, step: "any", help: "Players within this radius receive natural-defeat reward claims; 100–20,000." })}
-          ${inputField("Respawn player radius", "respawnPlayerRadius", spawner.respawnPlayerRadius, { type: "number", min: 1000, max: 100000, step: "any", help: "Players within this radius keep active bosses eligible for respawn checks; 1,000–100,000." })}
-          ${inputField("Arena radius", "arenaRadius", spawner.arenaRadius, { type: "number", min: 1000, max: 100000, step: "any", help: "Available radius for the encounter formation; 1,000–100,000." })}
-          ${inputField("Member spacing", "memberSpacing", spawner.memberSpacing, { type: "number", min: 100, max: 10000, step: "any", help: "Base spacing multiplied by the largest member scale; 100–10,000." })}
+          ${inputField("Reward match radius (cm)", "matchRadius", spawner.matchRadius, { type: "number", min: 100, max: 20000, step: "any", help: "Players within this radius receive natural-defeat reward claims; 100–20,000 cm." })}
+          ${inputField("Respawn player radius (cm)", "respawnPlayerRadius", spawner.respawnPlayerRadius, { type: "number", min: 1000, max: 100000, step: "any", help: "Players within this radius keep active bosses eligible for respawn checks; 1,000–100,000 cm." })}
+          ${inputField("Arena radius (cm)", "arenaRadius", spawner.arenaRadius, { type: "number", min: 1000, max: 100000, step: "any", help: "Available radius for the encounter formation; 1,000–100,000 cm." })}
+          ${inputField("Member spacing (cm)", "memberSpacing", spawner.memberSpacing, { type: "number", min: 100, max: 10000, step: "any", help: "Base spacing multiplied by the largest member scale; 100–10,000 cm." })}
         </div>`),
       sectionCard("Arena policy", "This property is accepted for forward compatibility.", `
         ${toggleRow("Block building", "blockBuilding", spawner.blockBuilding, "Currently suspended by WorldBossFramework; enabling it does not block construction in v0.7.1.")}
@@ -266,64 +337,75 @@
   }
 
   function renderMembers(spawner) {
-    const cards = spawner.members.map((member, index) => `
-      <details class="member-card"${index === 0 ? " open" : ""}>
-        <summary class="member-summary">
-          <div class="summary-title"><strong>Member ${index + 1}</strong><span data-member-summary="${index}">${escapeHtml(member.palId || "Pal ID required")} · Level ${escapeHtml(member.level)}</span></div>
-        </summary>
-        <div class="detail-body">
-          <div class="field-grid">
-            ${inputField("Pal / NPC ID", "palId", member.palId, { scope: "member", index, list: "pal-options", help: "Exact character ID written to pal_id; 1–64 letters, numbers, underscores, dots, or hyphens." })}
-            ${inputField("Level", "level", member.level, { scope: "member", index, type: "number", min: 1, max: 100, step: 1 })}
-            ${selectField("Designation", "designation", member.designation, [["normal", "Normal"], ["alpha", "Alpha"], ["predator", "Predator"]], { scope: "member", index, help: "Alpha and Predator are mutually exclusive." })}
-            ${inputField("Scale", "scale", member.scale, { scope: "member", index, type: "number", min: 0.1, max: 10, step: "any", help: "Model scale multiplier from 0.1 to 10." })}
-          </div>
-          ${toggleRow("Uncapturable", "uncapturable", member.uncapturable, "Prevents this member from being captured.", { scope: "member", index })}
-          ${memberNotice(member)}
-          <div class="field-grid three">
-            ${inputField("HP multiplier", "hpMultiplier", member.hpMultiplier, { scope: "member", index, type: "number", min: 0.01, max: 1000, step: "any" })}
-            ${inputField("Attack multiplier", "attackMultiplier", member.attackMultiplier, { scope: "member", index, type: "number", min: 0.01, max: 1000, step: "any" })}
-            ${inputField("Defense multiplier", "defenseMultiplier", member.defenseMultiplier, { scope: "member", index, type: "number", min: 0.01, max: 1000, step: "any", help: "2.0 means half incoming damage." })}
-          </div>
-          <div class="field-label">Active skills</div>
-          <div class="field-grid three">
-            ${member.activeSkills.map((skill, slot) => inputField(`Slot ${slot + 1}`, `activeSkill${slot}`, skill, { scope: "member", index, list: "active-skill-options", placeholder: "Optional" })).join("")}
-          </div>
-          <div class="field-label">Passive skills</div>
-          <div class="field-grid">
-            ${member.passiveSkills.map((skill, slot) => inputField(`Slot ${slot + 1}`, `passiveSkill${slot}`, skill, { scope: "member", index, list: "passive-skill-options", placeholder: "Optional" })).join("")}
-          </div>
-          <div class="detail-actions"><button class="button button-danger button-small" type="button" data-action="remove-member" data-index="${index}">Remove Member</button></div>
-        </div>
-      </details>`).join("");
+    const member = selectedMember(spawner);
+    const index = member ? spawner.members.indexOf(member) : -1;
     return `<div class="collection-toolbar">
-      <p>Members generate contiguous indices from 1 to ${spawner.members.length || 0}. Maximum 16.</p>
+      <p>Select a member from the encounter queue card to edit it here. Maximum 16.</p>
       <button class="button button-secondary button-small" type="button" data-action="add-member">Add Member</button>
     </div>
-    ${cards || `<div class="empty-collection">At least one member is required for an enabled spawner.</div>`}`;
+    ${member ? sectionCard(`Member ${index + 1}`, `${member.palId || "Pal / NPC ID required"} · Level ${member.level}`, `
+      <div class="field-grid">
+        ${inputField("Pal / NPC ID", "palId", member.palId, { scope: "member", index, list: "pal-options", help: "Exact character ID written to pal_id; 1–64 letters, numbers, underscores, dots, or hyphens." })}
+        ${inputField("Level", "level", member.level, { scope: "member", index, type: "number", min: 1, max: 100, step: 1 })}
+        ${selectField("Designation", "designation", member.designation, [["normal", "Normal"], ["alpha", "Alpha"], ["predator", "Predator"]], { scope: "member", index, help: "Alpha and Predator are mutually exclusive." })}
+        ${inputField("Scale", "scale", member.scale, { scope: "member", index, type: "number", min: 0.1, max: 10, step: "any", help: "Model scale multiplier from 0.1 to 10." })}
+      </div>
+      ${toggleRow("Uncapturable", "uncapturable", member.uncapturable, "Prevents this member from being captured.", { scope: "member", index })}
+      ${memberNotice(member)}
+      <div class="field-grid three member-stat-grid">
+        ${inputField("HP multiplier", "hpMultiplier", member.hpMultiplier, { scope: "member", index, type: "number", min: 0.01, max: 1000, step: "any" })}
+        ${inputField("Attack multiplier", "attackMultiplier", member.attackMultiplier, { scope: "member", index, type: "number", min: 0.01, max: 1000, step: "any" })}
+        ${inputField("Defense multiplier", "defenseMultiplier", member.defenseMultiplier, { scope: "member", index, type: "number", min: 0.01, max: 1000, step: "any", help: "2.0 means half incoming damage." })}
+      </div>
+      <div class="field-label member-skill-heading">Active skills</div>
+      <div class="field-grid three">
+        ${member.activeSkills.map((skill, slot) => inputField(`Slot ${slot + 1}`, `activeSkill${slot}`, skill, { scope: "member", index, list: "active-skill-options", placeholder: "Optional" })).join("")}
+      </div>
+      <div class="field-label member-skill-heading">Passive skills</div>
+      <div class="field-grid">
+        ${member.passiveSkills.map((skill, slot) => inputField(`Slot ${slot + 1}`, `passiveSkill${slot}`, skill, { scope: "member", index, list: "passive-skill-options", placeholder: "Optional" })).join("")}
+      </div>`, "member-editor-card") : `<div class="empty-collection">Add a member from this tab. At least one member is required for an enabled spawner.</div>`}`;
   }
 
   function renderRewards(spawner) {
-    const cards = spawner.rewards.map((reward, index) => `
-      <details class="reward-card"${index === 0 ? " open" : ""}>
-        <summary class="reward-summary">
-          <div class="summary-title"><strong>Reward ${index + 1}</strong><span data-reward-summary="${index}">${escapeHtml(reward.kind === "currency" ? `${reward.count} shop currency` : `${reward.count} × ${reward.item || "Item ID required"}`)}</span></div>
-        </summary>
-        <div class="detail-body">
-          <div class="field-grid">
-            ${selectField("Reward type", "kind", reward.kind, [["item", "Item"], ["currency", "Server shop currency"]], { scope: "reward", index })}
-            ${inputField("Count", "count", reward.count, { scope: "reward", index, type: "text", inputMode: "numeric", help: "Positive whole number." })}
-            ${reward.kind === "item" ? inputField("Item ID", "item", reward.item, { scope: "reward", index, list: "item-options", help: "Exact Palworld item spawn ID." }) : `<div class="field"><span class="field-label">Currency provider</span><div class="notice">Delivered through ServerShopFramework API 1 when the player claims rewards.</div></div>`}
-            ${inputField("Drop chance", "chance", reward.chance, { scope: "reward", index, type: "number", min: 0, max: 1, step: "any", help: "0 never awards; 1 always awards. Rolled once per eligible player." })}
-          </div>
-          <div class="detail-actions"><button class="button button-danger button-small" type="button" data-action="remove-reward" data-index="${index}">Remove Reward</button></div>
-        </div>
-      </details>`).join("");
+    selectedReward(spawner);
+    const rows = spawner.rewards.map((reward, index) => `
+      <tr class="${reward.uid === spawner.activeRewardUid ? "selected" : ""}" data-action="select-reward" data-reward-uid="${reward.uid}">
+        <th scope="row"><span class="reward-number">${index + 1}</span></th>
+        <td>
+          <label class="sr-only" for="reward-kind-${index}">Reward ${index + 1} type</label>
+          <select id="reward-kind-${index}" data-scope="reward" data-key="kind" data-index="${index}">
+            <option value="item"${reward.kind === "item" ? " selected" : ""}>Item</option>
+            <option value="currency"${reward.kind === "currency" ? " selected" : ""}>Shop currency</option>
+          </select>
+        </td>
+        <td>
+          <label class="sr-only" for="reward-item-${index}">Reward ${index + 1} item ID</label>
+          ${reward.kind === "item"
+            ? `<input id="reward-item-${index}" type="text" data-scope="reward" data-key="item" data-index="${index}" value="${valueAttr(reward.item)}" list="item-options" placeholder="Item ID">`
+            : `<input id="reward-item-${index}" type="text" value="ServerShopFramework" disabled aria-label="Currency provider">`}
+        </td>
+        <td>
+          <label class="sr-only" for="reward-count-${index}">Reward ${index + 1} count</label>
+          <input id="reward-count-${index}" type="number" min="1" step="1" data-scope="reward" data-key="count" data-index="${index}" value="${valueAttr(reward.count)}">
+        </td>
+        <td>
+          <label class="sr-only" for="reward-chance-${index}">Reward ${index + 1} drop chance</label>
+          <input id="reward-chance-${index}" type="number" min="0" max="1" step="0.01" data-scope="reward" data-key="chance" data-index="${index}" value="${valueAttr(reward.chance)}">
+        </td>
+      </tr>`).join("");
     return `<div class="collection-toolbar">
       <p>Rewards generate contiguous indices from 1 to ${spawner.rewards.length}. Maximum 64.</p>
-      <button class="button button-secondary button-small" type="button" data-action="add-reward">Add Reward</button>
+      <div class="collection-actions">
+        <button class="button button-secondary button-small" type="button" data-action="add-reward">Add Reward</button>
+        <button class="button button-danger button-small" type="button" data-action="remove-reward"${spawner.activeRewardUid ? "" : " disabled"}>Remove Reward</button>
+      </div>
     </div>
-    ${cards || `<div class="empty-collection">No defeat rewards configured. This is valid.</div>`}`;
+    ${rows ? `<div class="reward-sheet-wrap"><table class="reward-sheet">
+      <thead><tr><th>#</th><th>Reward type</th><th>Item ID / provider</th><th>Count</th><th>Drop chance</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <p class="table-help">Drop chance ranges from 0.00 to 1.00 and is rolled once per eligible player.</p>` : `<div class="empty-collection">No defeat rewards configured. This is valid.</div>`}`;
   }
 
   function renderShop(spawner) {
@@ -379,7 +461,9 @@
       else if (passiveMatch) member.passiveSkills[Number(passiveMatch[1])] = value;
       else member[target.dataset.key] = value;
     } else if (target.dataset.scope === "reward" && spawner.rewards[index]) {
-      spawner.rewards[index][target.dataset.key] = value;
+      const reward = spawner.rewards[index];
+      reward[target.dataset.key] = value;
+      if (target.dataset.key === "kind" && value === "currency") reward.item = "";
     }
     markDirty();
     updateVisibleLabels();
@@ -439,7 +523,54 @@
     render();
   }
 
-  function handleAction(action, index) {
+  function findSpawner(spawnerUid) {
+    return state.spawners.find((spawner) => spawner.uid === spawnerUid) || null;
+  }
+
+  function selectMember(spawnerUid, memberUid) {
+    const spawner = findSpawner(spawnerUid);
+    if (!spawner || !spawner.members.some((member) => member.uid === memberUid)) return;
+    state.selectedUid = spawner.uid;
+    spawner.activeMemberUid = memberUid;
+    state.activeSection = "members";
+    render();
+  }
+
+  function duplicateMember(spawnerUid, memberUid) {
+    const spawner = findSpawner(spawnerUid);
+    const sourceIndex = spawner?.members.findIndex((member) => member.uid === memberUid) ?? -1;
+    if (!spawner || sourceIndex < 0) return;
+    if (spawner.members.length >= 16) return showToast("A spawner can contain at most 16 members.");
+    const source = spawner.members[sourceIndex];
+    const duplicate = {
+      ...source,
+      uid: uid("member"),
+      activeSkills: [...source.activeSkills],
+      passiveSkills: [...source.passiveSkills]
+    };
+    spawner.members.splice(sourceIndex + 1, 0, duplicate);
+    state.selectedUid = spawner.uid;
+    spawner.activeMemberUid = duplicate.uid;
+    state.activeSection = "members";
+    markDirty();
+    render();
+    showToast("Member duplicated.");
+  }
+
+  function removeMember(spawnerUid, memberUid) {
+    const spawner = findSpawner(spawnerUid);
+    const memberIndex = spawner?.members.findIndex((member) => member.uid === memberUid) ?? -1;
+    if (!spawner || memberIndex < 0) return;
+    spawner.members.splice(memberIndex, 1);
+    if (spawner.activeMemberUid === memberUid) {
+      spawner.activeMemberUid = spawner.members[Math.min(memberIndex, spawner.members.length - 1)]?.uid || null;
+    }
+    state.selectedUid = spawner.uid;
+    markDirty();
+    render();
+  }
+
+  function handleAction(action) {
     const spawner = selectedSpawner();
     if (!spawner) return;
     if (action === "add-member") {
@@ -452,17 +583,265 @@
       member.activeSkills = ["", "", ""];
       member.passiveSkills = ["", "", "", ""];
       spawner.members.push(member);
-    } else if (action === "remove-member") {
-      spawner.members.splice(index, 1);
+      spawner.activeMemberUid = member.uid;
     } else if (action === "add-reward") {
       if (spawner.rewards.length >= 64) return showToast("A spawner can contain at most 64 rewards.");
-      spawner.rewards.push(defaultReward("item"));
+      const reward = defaultReward("item");
+      spawner.rewards.push(reward);
+      spawner.activeRewardUid = reward.uid;
     } else if (action === "remove-reward") {
+      const index = spawner.rewards.findIndex((reward) => reward.uid === spawner.activeRewardUid);
+      if (index < 0) return showToast("Select a reward row to remove.");
       spawner.rewards.splice(index, 1);
+      spawner.activeRewardUid = spawner.rewards[Math.min(index, spawner.rewards.length - 1)]?.uid || null;
     }
     markDirty();
     renderEditor();
     renderSidebar();
+  }
+
+  const spawnerLoadFields = {
+    enabled: ["enabled", "boolean"],
+    title: ["title", "value"],
+    first_defeat_title: ["firstDefeatTitle", "value"],
+    auto_enabled: ["autoEnabled", "boolean"],
+    queue_order: ["queueOrder", "value"],
+    map_x: ["mapX", "value"],
+    map_y: ["mapY", "value"],
+    ground_clearance: ["groundClearance", "value"],
+    rotation_pitch: ["rotationPitch", "value"],
+    rotation_yaw: ["rotationYaw", "value"],
+    rotation_roll: ["rotationRoll", "value"],
+    match_radius: ["matchRadius", "value"],
+    respawn_player_radius: ["respawnPlayerRadius", "value"],
+    member_spacing: ["memberSpacing", "value"],
+    arena_radius: ["arenaRadius", "value"],
+    block_building: ["blockBuilding", "boolean"],
+    shop_offer_enabled: ["shopOfferEnabled", "boolean"],
+    shop_currency_cost: ["shopCurrencyCost", "value"],
+    shop_max_purchases: ["shopMaxPurchases", "value"],
+    shop_cooldown_seconds: ["shopCooldownSeconds", "value"],
+    shop_reset_schedule: ["shopResetSchedule", "boolean"]
+  };
+
+  const memberLoadFields = {
+    pal_id: ["palId", "value"],
+    level: ["level", "value"],
+    alpha: ["_alpha", "boolean"],
+    predator: ["_predator", "boolean"],
+    uncapturable: ["uncapturable", "boolean"],
+    scale: ["scale", "value"],
+    hp_multiplier: ["hpMultiplier", "value"],
+    attack_multiplier: ["attackMultiplier", "value"],
+    defense_multiplier: ["defenseMultiplier", "value"],
+    active_skill_1: ["activeSkills", "value", 0],
+    active_skill_2: ["activeSkills", "value", 1],
+    active_skill_3: ["activeSkills", "value", 2],
+    passive_skill_1: ["passiveSkills", "value", 0],
+    passive_skill_2: ["passiveSkills", "value", 1],
+    passive_skill_3: ["passiveSkills", "value", 2],
+    passive_skill_4: ["passiveSkills", "value", 3]
+  };
+
+  const rewardLoadFields = {
+    kind: ["kind", "value"],
+    item: ["item", "value"],
+    count: ["count", "value"],
+    chance: ["chance", "value"]
+  };
+
+  function stripConfigComment(line) {
+    let quote = "";
+    let escaped = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const character = line[index];
+      if (escaped) {
+        escaped = false;
+      } else if (quote && character === "\\") {
+        escaped = true;
+      } else if (quote) {
+        if (character === quote) quote = "";
+      } else if (character === '"' || character === "'") {
+        quote = character;
+      } else if ((character === ";" || character === "#") && (index === 0 || /\s/.test(line[index - 1]))) {
+        return line.slice(0, index);
+      }
+    }
+    return line;
+  }
+
+  function parseLoadedValue(raw, lineNumber, errors) {
+    const value = String(raw ?? "").trim();
+    const quote = value[0];
+    if (quote === '"' || quote === "'") {
+      if (value.length < 2 || value.at(-1) !== quote) {
+        errors.push(`Line ${lineNumber}: quoted value is not closed.`);
+        return "";
+      }
+      const body = value.slice(1, -1);
+      let decoded = "";
+      for (let index = 0; index < body.length; index += 1) {
+        const character = body[index];
+        if (character !== "\\" || index === body.length - 1) {
+          decoded += character;
+          continue;
+        }
+        const escaped = body[index + 1];
+        const replacements = { n: "\n", r: "\r", t: "\t", "\\": "\\", '"': '"', "'": "'" };
+        decoded += Object.prototype.hasOwnProperty.call(replacements, escaped) ? replacements[escaped] : escaped;
+        index += 1;
+      }
+      return decoded;
+    }
+    if (value === "true") return true;
+    if (value === "false") return false;
+    const numeric = Number(value);
+    return value !== "" && Number.isFinite(numeric) ? numeric : value;
+  }
+
+  function assignLoadedField(target, descriptor, value, key, lineNumber, errors) {
+    const [property, kind, slot] = descriptor;
+    if (kind === "boolean" && typeof value !== "boolean") {
+      errors.push(`Line ${lineNumber}: ${key} must be true or false.`);
+      return;
+    }
+    if (slot !== undefined) target[property][slot] = value;
+    else target[property] = value;
+  }
+
+  function parseSpawnerConfig(text) {
+    const spawners = new Map();
+    const seenKeys = new Set();
+    const errors = [];
+
+    String(text).replace(/^\uFEFF/, "").split(/\r?\n/).forEach((sourceLine, lineIndex) => {
+      const lineNumber = lineIndex + 1;
+      const line = stripConfigComment(sourceLine).trim();
+      if (!line) return;
+      const separator = line.indexOf("=");
+      if (separator < 1) {
+        errors.push(`Line ${lineNumber}: expected a key followed by = and a value.`);
+        return;
+      }
+      const key = line.slice(0, separator).trim();
+      const rawValue = line.slice(separator + 1).trim();
+      const rootMatch = key.match(/^spawners\.([A-Za-z0-9_-]{1,32})\.(.+)$/);
+      if (!rootMatch) {
+        errors.push(`Line ${lineNumber}: “${key}” is not a supported spawner key.`);
+        return;
+      }
+      const duplicateKey = key.toLowerCase();
+      if (seenKeys.has(duplicateKey)) {
+        errors.push(`Line ${lineNumber}: duplicate key “${key}”.`);
+        return;
+      }
+      seenKeys.add(duplicateKey);
+
+      const [, spawnerId, remainder] = rootMatch;
+      if (!spawners.has(spawnerId)) spawners.set(spawnerId, emptySpawner(spawnerId));
+      const spawner = spawners.get(spawnerId);
+      const value = parseLoadedValue(rawValue, lineNumber, errors);
+      const rewardMatch = remainder.match(/^reward\.([1-9][0-9]*)\.([A-Za-z0-9_]+)$/);
+      if (rewardMatch) {
+        const index = Number(rewardMatch[1]);
+        const descriptor = rewardLoadFields[rewardMatch[2]];
+        if (index > 64) errors.push(`Line ${lineNumber}: reward index must be between 1 and 64.`);
+        else if (!descriptor) errors.push(`Line ${lineNumber}: unsupported reward field “${rewardMatch[2]}”.`);
+        else {
+          while (spawner.rewards.length < index) spawner.rewards.push({ uid: uid("reward"), kind: "item", item: "", count: 1, chance: 1 });
+          assignLoadedField(spawner.rewards[index - 1], descriptor, value, key, lineNumber, errors);
+        }
+        return;
+      }
+
+      const memberMatch = remainder.match(/^([A-Za-z0-9_]+)\.([1-9][0-9]*)$/);
+      if (memberMatch) {
+        const index = Number(memberMatch[2]);
+        const descriptor = memberLoadFields[memberMatch[1]];
+        if (index > 16) errors.push(`Line ${lineNumber}: member index must be between 1 and 16.`);
+        else if (!descriptor) errors.push(`Line ${lineNumber}: unsupported indexed field “${memberMatch[1]}”.`);
+        else {
+          while (spawner.members.length < index) spawner.members.push(emptyMember());
+          assignLoadedField(spawner.members[index - 1], descriptor, value, key, lineNumber, errors);
+        }
+        return;
+      }
+
+      const descriptor = spawnerLoadFields[remainder];
+      if (!descriptor) {
+        errors.push(`Line ${lineNumber}: unsupported spawner field “${remainder}”.`);
+        return;
+      }
+      assignLoadedField(spawner, descriptor, value, key, lineNumber, errors);
+    });
+
+    const loaded = [...spawners.values()];
+    loaded.forEach((spawner) => {
+      spawner.members.forEach((member, index) => {
+        if (member._alpha === true && member._predator === true) {
+          errors.push(`Spawner ${spawner.id}, member ${index + 1}: Alpha and Predator cannot both be true.`);
+        }
+        member.designation = member._predator === true ? "predator" : member._alpha === true ? "alpha" : "normal";
+        delete member._alpha;
+        delete member._predator;
+      });
+      spawner.rewards.forEach((reward, index) => {
+        reward.kind = String(reward.kind || "item").toLowerCase();
+        if (reward.kind === "currency" && String(reward.item || "").trim()) {
+          errors.push(`Spawner ${spawner.id}, reward ${index + 1}: item is not used for currency rewards.`);
+        }
+      });
+      spawner.activeMemberUid = spawner.members[0]?.uid || null;
+      spawner.activeRewardUid = spawner.rewards[0]?.uid || null;
+    });
+    if (!loaded.length) errors.push("The file does not contain any spawners.* properties.");
+    return { spawners: loaded, errors };
+  }
+
+  function showLoadErrors(errors) {
+    validationResults.className = "validation-results errors";
+    validationStatus.textContent = "Load failed";
+    validationStatus.className = "status-chip status-error";
+    validationResults.innerHTML = `<strong>The file was not loaded.</strong><ul>${errors.slice(0, 8).map((error) => `<li>${escapeHtml(error)}</li>`).join("")}</ul>${errors.length > 8 ? `<p>Plus ${errors.length - 8} more errors.</p>` : ""}`;
+    showToast("The selected file could not be loaded.");
+  }
+
+  async function loadConfigFile(file) {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showLoadErrors(["The selected file is larger than the 2 MB import limit."]);
+      return;
+    }
+    let text;
+    try {
+      text = await file.text();
+    } catch (_error) {
+      showLoadErrors(["The selected file could not be read as text."]);
+      return;
+    }
+    const loaded = parseSpawnerConfig(text);
+    if (loaded.errors.length) {
+      showLoadErrors(loaded.errors);
+      return;
+    }
+
+    state.spawners = loaded.spawners;
+    state.selectedUid = state.spawners[0]?.uid || null;
+    state.activeSection = "basics";
+    state.generatedText = "";
+    state.dirty = true;
+    outputElement.value = "";
+    downloadButton.disabled = true;
+    render();
+    const validation = validateAll();
+    $("#save-state").classList.remove("current");
+    $("#save-state").innerHTML = `<span></span> Loaded, not generated`;
+    validationResults.className = `validation-results${validation.errors.length ? " errors" : validation.warnings.length ? " warnings" : ""}`;
+    validationStatus.textContent = validation.errors.length ? "Loaded with errors" : validation.warnings.length ? "Loaded with notes" : "Loaded";
+    validationStatus.className = `status-chip ${validation.errors.length ? "status-error" : validation.warnings.length ? "status-stale" : "status-valid"}`;
+    const notes = [...validation.errors, ...validation.warnings];
+    validationResults.innerHTML = `<strong>Loaded ${state.spawners.length} spawner${state.spawners.length === 1 ? "" : "s"} from ${escapeHtml(file.name)}.</strong>${notes.length ? `<ul>${notes.slice(0, 6).map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>${notes.length > 6 ? `<p>Plus ${notes.length - 6} more notices.</p>` : ""}` : "<p>Review the imported values, then generate the configuration.</p>"}`;
+    showToast(`Loaded ${state.spawners.length} spawner${state.spawners.length === 1 ? "" : "s"}.`);
   }
 
   function validateAll() {
@@ -578,6 +957,7 @@
           if (!/^[A-Za-z0-9_]{1,128}$/.test(item)) errors.push(`${rewardPrefix}: Item ID is required and must contain only letters, numbers, or underscores.`);
           else if (!itemIds.has(item.toLowerCase())) warnings.push(`${rewardPrefix}: Item ID was not found in the bundled item database; verify it before use.`);
         } else {
+          if (String(reward.item || "").trim()) errors.push(`${rewardPrefix}: Item ID is not used for currency rewards.`);
           hasCurrencyReward = true;
         }
       });
@@ -745,11 +1125,18 @@
   listElement.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
-    if (button.dataset.action === "select-spawner") {
+    const action = button.dataset.action;
+    if (action === "select-spawner") {
       state.selectedUid = button.dataset.uid;
       render();
-    } else if (button.dataset.action === "remove-spawner") {
+    } else if (action === "remove-spawner") {
       removeSpawner(button.dataset.uid);
+    } else if (action === "select-member") {
+      selectMember(button.dataset.spawnerUid, button.dataset.memberUid);
+    } else if (action === "duplicate-member") {
+      duplicateMember(button.dataset.spawnerUid, button.dataset.memberUid);
+    } else if (action === "remove-member") {
+      removeMember(button.dataset.spawnerUid, button.dataset.memberUid);
     }
   });
 
@@ -761,19 +1148,41 @@
   });
 
   formElement.addEventListener("input", (event) => updateValue(event.target));
+  formElement.addEventListener("focusin", (event) => {
+    const rewardRow = event.target.closest?.('tr[data-action="select-reward"]');
+    const spawner = selectedSpawner();
+    if (!rewardRow || !spawner) return;
+    spawner.activeRewardUid = rewardRow.dataset.rewardUid;
+    formElement.querySelectorAll('tr[data-action="select-reward"]').forEach((row) => row.classList.toggle("selected", row === rewardRow));
+  });
   formElement.addEventListener("change", (event) => {
     updateValue(event.target);
     if (event.target.dataset.key === "kind" || event.target.dataset.key === "palId") renderEditor();
   });
   formElement.addEventListener("click", (event) => {
+    const rewardRow = event.target.closest('tr[data-action="select-reward"]');
+    if (rewardRow) {
+      const spawner = selectedSpawner();
+      if (spawner) {
+        spawner.activeRewardUid = rewardRow.dataset.rewardUid;
+        formElement.querySelectorAll('tr[data-action="select-reward"]').forEach((row) => row.classList.toggle("selected", row === rewardRow));
+        formElement.querySelector('button[data-action="remove-reward"]')?.removeAttribute("disabled");
+      }
+    }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     event.preventDefault();
-    handleAction(button.dataset.action, Number(button.dataset.index));
+    handleAction(button.dataset.action);
   });
 
   $("#add-spawner").addEventListener("click", addSpawner);
   $("#add-empty").addEventListener("click", addSpawner);
+  $("#load-config").addEventListener("click", () => $("#config-file").click());
+  $("#config-file").addEventListener("change", async (event) => {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    await loadConfigFile(file);
+  });
   $("#generate").addEventListener("click", generateConfig);
   $("#generate-top").addEventListener("click", generateConfig);
   downloadButton.addEventListener("click", downloadConfig);
