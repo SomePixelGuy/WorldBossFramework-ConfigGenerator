@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build and validate WorldBossFramework spawners.config files in your browser.">
+  <title>World Boss Config Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><span></span></div>
+      <div>
+        <p class="eyebrow">WorldBossFramework</p>
+        <h1>Spawner Config Generator</h1>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="privacy-note"><span aria-hidden="true"></span> Runs entirely in your browser</div>
+      <button class="button button-primary" id="generate-top" type="button">Generate Config</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel spawner-panel" aria-label="Configured spawners">
+      <div class="panel-heading">
+        <div>
+          <p class="section-kicker">Encounter queue</p>
+          <h2>Spawners <span class="count-badge" id="spawner-count">0</span></h2>
+        </div>
+        <button class="icon-button" id="add-spawner" type="button" aria-label="Add spawner" title="Add spawner">+</button>
+      </div>
+      <div class="spawner-list" id="spawner-list"></div>
+      <div class="panel-tip">
+        <strong>Queue order</strong>
+        <span>Lower values are selected first when the controller uses ascending order.</span>
+      </div>
+    </aside>
+
+    <section class="editor-panel" aria-label="Spawner editor">
+      <div id="editor-empty" class="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">+</div>
+        <h2>No spawners yet</h2>
+        <p>Add a spawner to begin building the encounter list.</p>
+        <button class="button button-primary" id="add-empty" type="button">Add Spawner</button>
+      </div>
+      <div id="editor-shell">
+        <div class="editor-heading">
+          <div>
+            <p class="section-kicker" id="selected-id-label">Spawner</p>
+            <h2 id="selected-title">Spawner details</h2>
+          </div>
+          <div class="save-state" id="save-state"><span></span> Not generated</div>
+        </div>
+        <nav class="section-tabs" id="section-tabs" aria-label="Spawner property sections">
+          <button type="button" data-section="basics">Basics</button>
+          <button type="button" data-section="location">Location</button>
+          <button type="button" data-section="arena">Arena</button>
+          <button type="button" data-section="members">Members <span id="member-tab-count">0</span></button>
+          <button type="button" data-section="rewards">Rewards <span id="reward-tab-count">0</span></button>
+          <button type="button" data-section="shop">Shop</button>
+        </nav>
+        <form id="spawner-form" novalidate></form>
+      </div>
+    </section>
+
+    <aside class="panel output-panel" aria-label="Generated configuration">
+      <div class="panel-heading output-heading">
+        <div>
+          <p class="section-kicker">Validated output</p>
+          <h2>spawners.config</h2>
+        </div>
+        <span class="status-chip status-idle" id="validation-status">Waiting</span>
+      </div>
+      <div class="validation-results" id="validation-results" aria-live="polite">
+        <p>Add or edit spawners, then generate the configuration.</p>
+      </div>
+      <label class="sr-only" for="config-output">Generated spawners.config text</label>
+      <textarea id="config-output" readonly spellcheck="false" placeholder="Validated configuration will appear here."></textarea>
+      <div class="output-actions">
+        <button class="button button-primary button-wide" id="generate" type="button">Generate Config</button>
+        <button class="button button-secondary button-wide" id="download" type="button" disabled>Download spawners.config</button>
+      </div>
+      <p class="restart-note">Install at <code>ue4ss/Mods/WorldBossFramework/spawners.config</code>, then fully restart the server.</p>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <datalist id="pal-options"></datalist>
+  <datalist id="item-options"></datalist>
+  <datalist id="active-skill-options"></datalist>
+  <datalist id="passive-skill-options"></datalist>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
