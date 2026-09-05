@@ -6,9 +6,9 @@ The generator provides a guided interface for configuring world boss encounters 
 
 ## Download World Boss Framework
 
-[**Download World Boss Framework v0.7.1**](./World Boss Framework/)
+[**Download World Boss Framework v0.7.1**](./WorldBossFramework/)
 
-The linked archive contains the World Boss Framework v0.7.1 mod files. Extract it into the Palworld server's `Pal/Binaries/Win64/ue4ss/Mods/` directory and restart the server.
+The linked `WorldBossFramework/` directory contains the mod files. Copy the entire folder into the Palworld server's `Pal/Binaries/Win64/ue4ss/Mods/` directory and restart the server.
 
 ## About World Boss Framework
 
@@ -38,6 +38,7 @@ All four dependencies must load successfully before World Boss Framework can cre
 ## Spawner Config Generator Features
 
 - Add, edit, and remove multiple world boss spawners.
+- Load an existing `spawners.config` file to edit its spawners, members, rewards, and settings.
 - Configure every spawner property supported by World Boss Framework v0.7.1.
 - Add up to 16 Pal or NPC members to each encounter.
 - Configure levels, scale, Alpha or Predator designation, capture restrictions, stat multipliers, active skills, and passive skills for every member.
@@ -51,14 +52,14 @@ All four dependencies must load successfully before World Boss Framework can cre
 ## Using the Spawner Config Generator
 
 1. Open the hosted generator in a modern browser.
-2. Choose **Load spawners.config** to edit an existing file, select the included example spawner, or choose **Add Spawner** to create another encounter.
+2. Choose **Load spawners.config** to edit an existing file, select the included example spawner, or choose **Add Spawners** to create another encounter.
 3. Use the editor tabs to configure the spawner:
    - **Basics** — ID, display title, first-defeat title, queue order, and availability.
    - **Location** — map coordinates, ground clearance, and rotation.
    - **Arena** — reward range, respawn range, arena size, and member spacing.
    - **Members** — encounter characters, stats, designations, and skills.
    - **Rewards** — item drops and virtual-currency rewards.
-   - **Shop** — optional ServerShopFramework early-summon offer.
+   - **Shop** — optional Server Shop Framework early-summon offer.
 4. Choose **Generate Config**.
 5. Correct any validation errors shown beside the output. Warnings identify settings that may require another framework or an ID that should be verified.
 6. Review the generated text and choose **Download spawners.config**.
@@ -71,13 +72,13 @@ The download button is disabled whenever the form has changed since the last suc
 2. Copy the downloaded file to:
 
    ```text
-   ue4ss/Mods/World Boss Framework/spawners.config
+   ue4ss/Mods/WorldBossFramework/spawners.config
    ```
 
 3. Replace the existing file when prompted.
 4. Fully restart the Palworld server. Reloading only the Lua mods is not sufficient for applying spawner configuration changes.
 
-The generator creates a complete file from the spawners currently shown on the page. It does not import or merge an existing `spawners.config` file. Form contents are also reset when the page is reloaded, so download the configuration before leaving the page.
+The generator creates a complete file from the spawners currently shown on the page. Loading an existing `spawners.config` replaces the current form contents; it does not merge two files. Form contents are also reset when the page is reloaded, so download the configuration before leaving the page.
 
 ## Validation Behavior
 

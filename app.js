@@ -113,6 +113,7 @@
   const state = {
     spawners: [firstSpawner],
     selectedUid: firstSpawner.uid,
+    expandedSpawnerUids: new Set([firstSpawner.uid]),
     activeSection: "basics",
     generatedText: "",
     dirty: true
@@ -213,7 +214,9 @@
       listElement.innerHTML = `<div class="empty-collection">No spawners configured.</div>`;
       return;
     }
-    listElement.innerHTML = state.spawners.map((spawner) => `
+    listElement.innerHTML = state.spawners.map((spawner) => {
+      const expanded = state.expandedSpawnerUids.has(spawner.uid);
+      return `
       <article class="spawner-card${spawner.uid === state.selectedUid ? " selected" : ""}">
         <button class="spawner-remove" type="button" data-action="remove-spawner" data-uid="${spawner.uid}" aria-label="Remove ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Remove spawner">×</button>
         <button class="spawner-select" type="button" data-action="select-spawner" data-uid="${spawner.uid}">
@@ -225,8 +228,14 @@
             ${spawner.enabled ? "" : `<span class="off">disabled</span>`}
           </span>
         </button>
-        <div class="sidebar-member-list" role="list" aria-label="${escapeHtml(spawner.title || spawner.id || "Spawner")} members">
-          ${spawner.members.length ? spawner.members.map((member, index) => `
+        <div class="sidebar-member-dropdown${expanded ? " expanded" : ""}">
+          <button class="sidebar-member-toggle" type="button" data-action="toggle-members" data-uid="${spawner.uid}" aria-expanded="${expanded}" aria-controls="member-list-${spawner.uid}">
+            <span>Members</span>
+            <span class="member-count">${spawner.members.length}</span>
+            <span class="member-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="sidebar-member-list" id="member-list-${spawner.uid}" role="list" aria-label="${escapeHtml(spawner.title || spawner.id || "Spawner")} members"${expanded ? "" : " hidden"}>
+            ${spawner.members.length ? spawner.members.map((member, index) => `
             <div class="sidebar-member-row${member.uid === spawner.activeMemberUid ? " active" : ""}" role="listitem">
               <button class="sidebar-member-select" type="button" data-action="select-member" data-spawner-uid="${spawner.uid}" data-member-uid="${member.uid}">
                 <span class="member-number">${index + 1}</span>
@@ -238,8 +247,10 @@
                 <button class="member-icon-button remove" type="button" data-action="remove-member" data-spawner-uid="${spawner.uid}" data-member-uid="${member.uid}" aria-label="Remove member ${index + 1}" title="Remove member">×</button>
               </div>
             </div>`).join("") : `<div class="sidebar-member-empty">No members configured</div>`}
+          </div>
         </div>
-      </article>`).join("");
+      </article>`;
+    }).join("");
   }
 
   function renderEditor() {
@@ -504,6 +515,7 @@
     const spawner = defaultSpawner(number);
     state.spawners.push(spawner);
     state.selectedUid = spawner.uid;
+    state.expandedSpawnerUids.add(spawner.uid);
     state.activeSection = "basics";
     markDirty();
     render();
@@ -516,6 +528,7 @@
     if (!window.confirm(`Remove “${spawner.title || spawner.id || "this spawner"}”?`)) return;
     const oldIndex = state.spawners.indexOf(spawner);
     state.spawners.splice(oldIndex, 1);
+    state.expandedSpawnerUids.delete(spawnerUid);
     if (state.selectedUid === spawnerUid) {
       state.selectedUid = state.spawners[Math.min(oldIndex, state.spawners.length - 1)]?.uid || null;
     }
@@ -531,6 +544,7 @@
     const spawner = findSpawner(spawnerUid);
     if (!spawner || !spawner.members.some((member) => member.uid === memberUid)) return;
     state.selectedUid = spawner.uid;
+    state.expandedSpawnerUids.add(spawner.uid);
     spawner.activeMemberUid = memberUid;
     state.activeSection = "members";
     render();
@@ -550,6 +564,7 @@
     };
     spawner.members.splice(sourceIndex + 1, 0, duplicate);
     state.selectedUid = spawner.uid;
+    state.expandedSpawnerUids.add(spawner.uid);
     spawner.activeMemberUid = duplicate.uid;
     state.activeSection = "members";
     markDirty();
@@ -827,6 +842,7 @@
 
     state.spawners = loaded.spawners;
     state.selectedUid = state.spawners[0]?.uid || null;
+    state.expandedSpawnerUids = new Set(state.selectedUid ? [state.selectedUid] : []);
     state.activeSection = "basics";
     state.generatedText = "";
     state.dirty = true;
@@ -1128,7 +1144,13 @@
     const action = button.dataset.action;
     if (action === "select-spawner") {
       state.selectedUid = button.dataset.uid;
+      state.expandedSpawnerUids.add(button.dataset.uid);
       render();
+    } else if (action === "toggle-members") {
+      const spawnerUid = button.dataset.uid;
+      if (state.expandedSpawnerUids.has(spawnerUid)) state.expandedSpawnerUids.delete(spawnerUid);
+      else state.expandedSpawnerUids.add(spawnerUid);
+      renderSidebar();
     } else if (action === "remove-spawner") {
       removeSpawner(button.dataset.uid);
     } else if (action === "select-member") {
