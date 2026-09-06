@@ -339,7 +339,7 @@
         </div>`),
       sectionCard("Arena policy", "This property is accepted for forward compatibility.", `
         ${toggleRow("Block building", "blockBuilding", spawner.blockBuilding, "Currently suspended by WorldBossFramework; enabling it does not block construction in v0.7.1.")}
-        <div class="notice"><strong>Current limitation:</strong> Native arena building restrictions remain disabled in the recovery build.</div>`)
+        <div class="notice"><strong>Current limitation:</strong> Native arena building restrictions are disabled in the World Boss Framework v1.0.0 build.</div>`)
     ].join("");
   }
 
@@ -361,8 +361,8 @@
       <div class="field-grid">
         ${inputField("Pal / NPC ID", "palId", member.palId, { scope: "member", index, list: "pal-options", help: "Exact character ID written to pal_id; 1–64 letters, numbers, underscores, dots, or hyphens." })}
         ${inputField("Level", "level", member.level, { scope: "member", index, type: "number", min: 1, max: 100, step: 1 })}
-        ${selectField("Designation", "designation", member.designation, [["normal", "Normal"], ["alpha", "Alpha"], ["predator", "Predator"]], { scope: "member", index, help: "Alpha and Predator are mutually exclusive." })}
-        ${inputField("Scale", "scale", member.scale, { scope: "member", index, type: "number", min: 0.1, max: 10, step: "any", help: "Model scale multiplier from 0.1 to 10." })}
+        ${selectField("Designation", "designation", member.designation, [["normal", "Normal"]], { scope: "member", index, help: "Forced Alpha and Predator designation disabled. Select BOSS_ variant pal from Pal/NPC ID." })}
+        ${inputField("Scale", "scale", member.scale, { scope: "member", index, type: "number", min: 1, max: 1, step: "any", help: "Model scale multiplier currently disabled." })}
       </div>
       ${toggleRow("Uncapturable", "uncapturable", member.uncapturable, "Prevents this member from being captured.", { scope: "member", index })}
       ${memberNotice(member)}
