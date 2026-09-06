@@ -218,7 +218,10 @@
       const expanded = state.expandedSpawnerUids.has(spawner.uid);
       return `
       <article class="spawner-card${spawner.uid === state.selectedUid ? " selected" : ""}">
-        <button class="spawner-remove" type="button" data-action="remove-spawner" data-uid="${spawner.uid}" aria-label="Remove ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Remove spawner">×</button>
+        <div class="spawner-actions">
+          <button class="spawner-action spawner-duplicate" type="button" data-action="duplicate-spawner" data-uid="${spawner.uid}" aria-label="Duplicate ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Duplicate spawner">${copyIcon()}</button>
+          <button class="spawner-action spawner-remove" type="button" data-action="remove-spawner" data-uid="${spawner.uid}" aria-label="Remove ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Remove spawner">×</button>
+        </div>
         <button class="spawner-select" type="button" data-action="select-spawner" data-uid="${spawner.uid}">
           <strong>${escapeHtml(spawner.title || "Untitled spawner")}</strong>
           <small>${escapeHtml(spawner.id || "missing_id")}</small>
@@ -409,6 +412,7 @@
       <p>Rewards generate contiguous indices from 1 to ${spawner.rewards.length}. Maximum 64.</p>
       <div class="collection-actions">
         <button class="button button-secondary button-small" type="button" data-action="add-reward">Add Reward</button>
+        <button class="button button-secondary button-small" type="button" data-action="duplicate-reward"${spawner.activeRewardUid ? "" : " disabled"}>Duplicate Reward</button>
         <button class="button button-danger button-small" type="button" data-action="remove-reward"${spawner.activeRewardUid ? "" : " disabled"}>Remove Reward</button>
       </div>
     </div>
@@ -536,6 +540,56 @@
     render();
   }
 
+  function duplicateSpawnerId(sourceId) {
+    const existing = new Set(state.spawners.map((spawner) => String(spawner.id || "").toLowerCase()));
+    const base = String(sourceId || "world_boss")
+      .replace(/[^A-Za-z0-9_-]/g, "_")
+      .replace(/^_+|_+$/g, "") || "world_boss";
+    for (let copyNumber = 1; ; copyNumber += 1) {
+      const suffix = copyNumber === 1 ? "_copy" : `_copy_${copyNumber}`;
+      const candidate = `${base.slice(0, Math.max(1, 32 - suffix.length))}${suffix}`;
+      if (!existing.has(candidate.toLowerCase())) return candidate;
+    }
+  }
+
+  function duplicateSpawner(spawnerUid) {
+    const sourceIndex = state.spawners.findIndex((spawner) => spawner.uid === spawnerUid);
+    if (sourceIndex < 0) return;
+    const source = state.spawners[sourceIndex];
+    const memberUidMap = new Map();
+    const rewardUidMap = new Map();
+    const members = source.members.map((member) => {
+      const duplicateUid = uid("member");
+      memberUidMap.set(member.uid, duplicateUid);
+      return {
+        ...member,
+        uid: duplicateUid,
+        activeSkills: [...member.activeSkills],
+        passiveSkills: [...member.passiveSkills]
+      };
+    });
+    const rewards = source.rewards.map((reward) => {
+      const duplicateUid = uid("reward");
+      rewardUidMap.set(reward.uid, duplicateUid);
+      return { ...reward, uid: duplicateUid };
+    });
+    const duplicate = {
+      ...source,
+      uid: uid("spawner"),
+      id: duplicateSpawnerId(source.id),
+      members,
+      rewards,
+      activeMemberUid: memberUidMap.get(source.activeMemberUid) || members[0]?.uid || null,
+      activeRewardUid: rewardUidMap.get(source.activeRewardUid) || rewards[0]?.uid || null
+    };
+    state.spawners.splice(sourceIndex + 1, 0, duplicate);
+    state.selectedUid = duplicate.uid;
+    state.expandedSpawnerUids.add(duplicate.uid);
+    markDirty();
+    render();
+    showToast(`Spawner duplicated as ${duplicate.id}.`);
+  }
+
   function findSpawner(spawnerUid) {
     return state.spawners.find((spawner) => spawner.uid === spawnerUid) || null;
   }
@@ -604,6 +658,14 @@
       const reward = defaultReward("item");
       spawner.rewards.push(reward);
       spawner.activeRewardUid = reward.uid;
+    } else if (action === "duplicate-reward") {
+      const index = spawner.rewards.findIndex((reward) => reward.uid === spawner.activeRewardUid);
+      if (index < 0) return showToast("Select a reward row to duplicate.");
+      if (spawner.rewards.length >= 64) return showToast("A spawner can contain at most 64 rewards.");
+      const reward = { ...spawner.rewards[index], uid: uid("reward") };
+      spawner.rewards.splice(index + 1, 0, reward);
+      spawner.activeRewardUid = reward.uid;
+      showToast("Reward duplicated.");
     } else if (action === "remove-reward") {
       const index = spawner.rewards.findIndex((reward) => reward.uid === spawner.activeRewardUid);
       if (index < 0) return showToast("Select a reward row to remove.");
@@ -1153,6 +1215,8 @@
       renderSidebar();
     } else if (action === "remove-spawner") {
       removeSpawner(button.dataset.uid);
+    } else if (action === "duplicate-spawner") {
+      duplicateSpawner(button.dataset.uid);
     } else if (action === "select-member") {
       selectMember(button.dataset.spawnerUid, button.dataset.memberUid);
     } else if (action === "duplicate-member") {

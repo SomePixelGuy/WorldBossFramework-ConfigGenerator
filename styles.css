@@ -136,7 +136,7 @@ h3 { margin-bottom: 0.25rem; font-size: 1rem; }
   font: 700 0.72rem/1 ui-monospace, monospace;
 }
 
-.icon-button, .spawner-remove, .member-icon-button {
+.icon-button, .spawner-action, .member-icon-button {
   border: 1px solid var(--line-strong);
   background: var(--panel-raised);
   color: var(--cyan);
@@ -153,7 +153,7 @@ h3 { margin-bottom: 0.25rem; font-size: 1rem; }
 }
 
 .icon-button:hover, .member-icon-button:hover { border-color: var(--cyan); background: var(--cyan-soft); }
-.icon-button:active, .button:active, .spawner-remove:active, .member-icon-button:active { transform: translateY(1px); }
+.icon-button:active, .button:active, .spawner-action:active, .member-icon-button:active { transform: translateY(1px); }
 
 .spawner-list { display: grid; gap: 0.75rem; margin-top: 1rem; }
 
@@ -175,7 +175,7 @@ h3 { margin-bottom: 0.25rem; font-size: 1rem; }
   text-align: left;
   border: 0;
   background: transparent;
-  padding: 0.78rem 3rem 0.68rem 0.78rem;
+  padding: 0.78rem 5.2rem 0.68rem 0.78rem;
   cursor: pointer;
   color: inherit;
 }
@@ -190,20 +190,39 @@ h3 { margin-bottom: 0.25rem; font-size: 1rem; }
 .spawner-meta span { padding: 0.1rem 0.35rem; border: 1px solid var(--line); border-radius: 4px; }
 .spawner-meta .off { color: var(--amber); }
 
-.spawner-remove {
+.spawner-actions {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
   z-index: 2;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.spawner-action {
   width: 30px;
   height: 30px;
   padding: 0;
+  display: grid;
+  place-items: center;
   border-radius: 8px;
+}
+
+.spawner-action svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+.spawner-remove {
   color: var(--danger);
   font-size: 1.08rem;
   line-height: 1;
 }
 
+.spawner-duplicate:hover { border-color: var(--cyan); background: var(--cyan-soft); }
 .spawner-remove:hover, .member-icon-button.remove:hover { color: #ffe6e9; border-color: var(--danger); background: var(--danger-soft); }
 
 .sidebar-member-dropdown {
