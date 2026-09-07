@@ -216,7 +216,6 @@ body.panel-resizing { cursor: col-resize; user-select: none; }
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel-soft);
-  overflow: hidden;
   transition: border-color 140ms ease, background 140ms ease;
 }
 
@@ -299,11 +298,12 @@ body.panel-resizing { cursor: col-resize; user-select: none; }
 .spawner-remove:hover, .member-icon-button.remove:hover { color: #ffe6e9; border-color: var(--danger); background: var(--danger-soft); }
 
 .sidebar-member-dropdown {
-  width: 100%;
+  width: 94%;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   overflow: hidden;
   background: #081219;
+  margin: 3%
 }
 
 .sidebar-member-toggle {
