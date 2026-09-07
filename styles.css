@@ -301,7 +301,6 @@ body.panel-resizing { cursor: col-resize; user-select: none; }
   width: 94%;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  overflow: hidden;
   background: #081219;
   margin: 3%
 }
