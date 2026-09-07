@@ -6,6 +6,11 @@
   const itemIds = new Set(data.items.map((entry) => entry.id.toLowerCase()));
   const activeSkillIds = new Set(data.activeSkills.map((entry) => entry.id.toLowerCase()));
   const passiveSkillIds = new Set(data.passiveSkills.map((entry) => entry.id.toLowerCase()));
+  const palNamesById = new Map();
+  data.pals.forEach((entry) => {
+    const key = String(entry.id || "").trim().toLowerCase();
+    if (key && entry.name && !palNamesById.has(key)) palNamesById.set(key, String(entry.name));
+  });
 
   const $ = (selector) => document.querySelector(selector);
   const listElement = $("#spawner-list");
@@ -15,9 +20,15 @@
   const validationStatus = $("#validation-status");
   const downloadButton = $("#download");
   const toastElement = $("#toast");
+  const workspaceElement = $(".workspace");
+  const searchElement = $("#spawner-search");
+  const copyConfigButtons = [$("#copy-config-top"), $("#copy-config")].filter(Boolean);
 
   let nextUid = 1;
   let toastTimer = null;
+  let rewardClipboard = null;
+  let draggedSpawnerUid = null;
+  let dragPlacement = null;
 
   const uid = (prefix) => `${prefix}-${nextUid++}`;
 
@@ -113,7 +124,8 @@
     expandedSpawnerUids: new Set([firstSpawner.uid]),
     activeSection: "basics",
     generatedText: "",
-    dirty: true
+    dirty: true,
+    spawnerFilter: ""
   };
 
   const escapeHtml = (value) => String(value ?? "")
@@ -126,6 +138,21 @@
   const selectedSpawner = () => state.spawners.find((spawner) => spawner.uid === state.selectedUid) || null;
   const valueAttr = (value) => escapeHtml(value ?? "");
   const copyIcon = () => `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>`;
+
+  function palDisplayName(value) {
+    const id = String(value || "").trim();
+    return palNamesById.get(id.toLowerCase()) || id || "Pal / NPC ID required";
+  }
+
+  function spawnerMatchesFilter(spawner, filter) {
+    const query = String(filter || "").trim().toLowerCase();
+    if (!query) return true;
+    const values = [spawner.id, spawner.title];
+    spawner.members.forEach((member) => {
+      values.push(member.palId, palDisplayName(member.palId));
+    });
+    return values.some((value) => String(value || "").toLowerCase().includes(query));
+  }
 
   function selectedMember(spawner) {
     let member = spawner.members.find((entry) => entry.uid === spawner.activeMemberUid);
@@ -206,15 +233,22 @@
   }
 
   function renderSidebar() {
-    $("#spawner-count").textContent = state.spawners.length;
+    const visibleSpawners = state.spawners.filter((spawner) => spawnerMatchesFilter(spawner, state.spawnerFilter));
+    $("#spawner-count").textContent = state.spawnerFilter.trim()
+      ? `${visibleSpawners.length}/${state.spawners.length}`
+      : state.spawners.length;
     if (!state.spawners.length) {
       listElement.innerHTML = `<div class="empty-collection">No spawners configured.</div>`;
       return;
     }
-    listElement.innerHTML = state.spawners.map((spawner) => {
+    if (!visibleSpawners.length) {
+      listElement.innerHTML = `<div class="empty-collection">No spawners match “${escapeHtml(state.spawnerFilter.trim())}”.</div>`;
+      return;
+    }
+    listElement.innerHTML = visibleSpawners.map((spawner) => {
       const expanded = state.expandedSpawnerUids.has(spawner.uid);
       return `
-      <article class="spawner-card${spawner.uid === state.selectedUid ? " selected" : ""}">
+      <article class="spawner-card${spawner.uid === state.selectedUid ? " selected" : ""}" data-spawner-uid="${spawner.uid}">
         <div class="spawner-actions">
           <button class="spawner-action spawner-duplicate" type="button" data-action="duplicate-spawner" data-uid="${spawner.uid}" aria-label="Duplicate ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Duplicate spawner">${copyIcon()}</button>
           <button class="spawner-action spawner-remove" type="button" data-action="remove-spawner" data-uid="${spawner.uid}" aria-label="Remove ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Remove spawner">×</button>
@@ -239,7 +273,7 @@
             <div class="sidebar-member-row${member.uid === spawner.activeMemberUid ? " active" : ""}" role="listitem">
               <button class="sidebar-member-select" type="button" data-action="select-member" data-spawner-uid="${spawner.uid}" data-member-uid="${member.uid}">
                 <span class="member-number">${index + 1}</span>
-                <span class="member-name">${escapeHtml(member.palId || "Pal / NPC ID required")}</span>
+                <span class="member-name" title="${escapeHtml(member.palId || "Pal / NPC ID required")}">${escapeHtml(palDisplayName(member.palId))}</span>
                 <span class="member-level">Lv. ${escapeHtml(member.level)}</span>
               </button>
               <div class="sidebar-member-actions">
@@ -249,6 +283,7 @@
             </div>`).join("") : `<div class="sidebar-member-empty">No members configured</div>`}
           </div>
         </div>
+        <button class="spawner-drag-handle" type="button" draggable="true" data-drag-spawner="${spawner.uid}" aria-label="Reorder ${escapeHtml(spawner.title || spawner.id || "spawner")}" title="Drag to reorder; arrow keys also work">•••</button>
       </article>`;
     }).join("");
   }
@@ -351,7 +386,7 @@
       <p>Select a member from the encounter queue card to edit it here. Maximum 16.</p>
       <button class="button button-secondary button-small" type="button" data-action="add-member">Add Member</button>
     </div>
-    ${member ? sectionCard(`Member ${index + 1}`, `${member.palId || "Pal / NPC ID required"} · Level ${member.level}`, `
+    ${member ? sectionCard(`Member ${index + 1}`, `${palDisplayName(member.palId)}${member.palId ? ` · ${member.palId}` : ""} · Level ${member.level}`, `
       <div class="field-grid">
         ${inputField("Pal / NPC ID", "palId", member.palId, { scope: "member", index, list: "pal-options", help: "Exact character ID written to pal_id; 1–64 letters, numbers, underscores, dots, or hyphens." })}
         ${inputField("Level", "level", member.level, { scope: "member", index, type: "number", min: 1, max: 100, step: 1 })}
@@ -406,6 +441,8 @@
       <div class="collection-actions">
         <button class="button button-secondary button-small" type="button" data-action="add-reward">Add Reward</button>
         <button class="button button-secondary button-small" type="button" data-action="duplicate-reward"${spawner.activeRewardUid ? "" : " disabled"}>Duplicate Reward</button>
+        <button class="button button-secondary button-small" type="button" data-action="copy-rewards">Copy Rewards List</button>
+        <button class="button button-secondary button-small" type="button" data-action="paste-rewards">Paste Rewards List</button>
         <button class="button button-danger button-small" type="button" data-action="remove-reward"${spawner.activeRewardUid ? "" : " disabled"}>Remove Reward</button>
       </div>
     </div>
@@ -485,7 +522,7 @@
     renderSidebar();
     spawner.members.forEach((member, index) => {
       const label = document.querySelector(`[data-member-summary="${index}"]`);
-      if (label) label.textContent = `${member.palId || "Pal ID required"} · Level ${member.level}`;
+      if (label) label.textContent = `${palDisplayName(member.palId)} · Level ${member.level}`;
     });
     spawner.rewards.forEach((reward, index) => {
       const label = document.querySelector(`[data-reward-summary="${index}"]`);
@@ -632,10 +669,107 @@
     render();
   }
 
-  function handleAction(action) {
+  function serializedRewards(rewards) {
+    return rewards.map((reward) => ({
+      kind: reward.kind,
+      item: reward.item,
+      count: reward.count,
+      chance: reward.chance
+    }));
+  }
+
+  function parseRewardClipboard(value) {
+    if (!value || value.format !== "WorldBossFramework.Rewards" || value.version !== 1 || !Array.isArray(value.rewards)) return null;
+    if (value.rewards.length > 64) return null;
+    const rewards = [];
+    for (const reward of value.rewards) {
+      if (!reward || (reward.kind !== "item" && reward.kind !== "currency")) return null;
+      rewards.push({
+        kind: reward.kind,
+        item: reward.kind === "item" ? String(reward.item || "") : "",
+        count: String(reward.count ?? ""),
+        chance: reward.chance ?? ""
+      });
+    }
+    return rewards;
+  }
+
+  async function writeClipboardText(text) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_error) {
+      // Local-file and browser permission policies commonly reject this path.
+    }
+    const fallback = document.createElement("textarea");
+    fallback.value = text;
+    fallback.setAttribute("readonly", "");
+    fallback.style.position = "fixed";
+    fallback.style.opacity = "0";
+    document.body.appendChild(fallback);
+    fallback.select();
+    let copied = false;
+    try {
+      copied = document.execCommand("copy");
+    } catch (_error) {
+      copied = false;
+    }
+    fallback.remove();
+    return copied;
+  }
+
+  async function readClipboardText() {
+    try {
+      if (navigator.clipboard?.readText) return await navigator.clipboard.readText();
+    } catch (_error) {
+      // The in-app rewards clipboard remains available when browser access is blocked.
+    }
+    return "";
+  }
+
+  async function copyRewards(spawner) {
+    rewardClipboard = {
+      format: "WorldBossFramework.Rewards",
+      version: 1,
+      rewards: serializedRewards(spawner.rewards)
+    };
+    await writeClipboardText(JSON.stringify(rewardClipboard, null, 2));
+    showToast(`Copied ${spawner.rewards.length} reward${spawner.rewards.length === 1 ? "" : "s"}.`);
+  }
+
+  async function pasteRewards(spawner) {
+    let rewards = null;
+    const clipboardText = await readClipboardText();
+    if (clipboardText) {
+      try {
+        rewards = parseRewardClipboard(JSON.parse(clipboardText));
+      } catch (_error) {
+        rewards = null;
+      }
+    }
+    if (!rewards) rewards = parseRewardClipboard(rewardClipboard);
+    if (!rewards) return showToast("No valid World Boss rewards list is available to paste.");
+    if (spawner.rewards.length && !window.confirm(`Replace all ${spawner.rewards.length} rewards on this spawner?`)) return;
+    spawner.rewards = rewards.map((reward) => ({ ...reward, uid: uid("reward") }));
+    spawner.activeRewardUid = spawner.rewards[0]?.uid || null;
+    markDirty();
+    renderEditor();
+    renderSidebar();
+    showToast(`Pasted ${spawner.rewards.length} reward${spawner.rewards.length === 1 ? "" : "s"}.`);
+  }
+
+  async function handleAction(action) {
     const spawner = selectedSpawner();
     if (!spawner) return;
-    if (action === "add-member") {
+    if (action === "copy-rewards") {
+      await copyRewards(spawner);
+      return;
+    } else if (action === "paste-rewards") {
+      await pasteRewards(spawner);
+      return;
+    } else if (action === "add-member") {
       if (spawner.members.length >= 16) return showToast("A spawner can contain at most 16 members.");
       const member = defaultMember("");
       member.designation = "normal";
@@ -901,6 +1035,8 @@
     state.activeSection = "basics";
     state.generatedText = "";
     state.dirty = true;
+    state.spawnerFilter = "";
+    searchElement.value = "";
     outputElement.value = "";
     downloadButton.disabled = true;
     render();
@@ -1134,7 +1270,7 @@
       $("#save-state").classList.remove("current");
       $("#save-state").innerHTML = `<span></span> Fix validation errors`;
       showToast("Fix the listed errors before downloading.");
-      return;
+      return false;
     }
 
     state.generatedText = renderConfig();
@@ -1153,6 +1289,13 @@
     $("#save-state").classList.add("current");
     $("#save-state").innerHTML = `<span></span> Generated output is current`;
     showToast("Valid spawners.config generated.");
+    return true;
+  }
+
+  async function copyConfigText() {
+    if ((!state.generatedText || state.dirty) && !generateConfig()) return;
+    const copied = await writeClipboardText(state.generatedText);
+    showToast(copied ? "Config text copied." : "Browser clipboard access was denied.");
   }
 
   function downloadConfig() {
@@ -1178,6 +1321,122 @@
       fragment.appendChild(option);
     });
     datalist.appendChild(fragment);
+  }
+
+  function visibleSpawnerUids() {
+    return state.spawners
+      .filter((spawner) => spawnerMatchesFilter(spawner, state.spawnerFilter))
+      .map((spawner) => spawner.uid);
+  }
+
+  function reorderSpawner(sourceUid, targetUid, afterTarget) {
+    if (!sourceUid || !targetUid || sourceUid === targetUid) return false;
+    const sourceIndex = state.spawners.findIndex((spawner) => spawner.uid === sourceUid);
+    const targetIndexBeforeRemoval = state.spawners.findIndex((spawner) => spawner.uid === targetUid);
+    if (sourceIndex < 0 || targetIndexBeforeRemoval < 0) return false;
+    const [source] = state.spawners.splice(sourceIndex, 1);
+    const targetIndex = state.spawners.findIndex((spawner) => spawner.uid === targetUid);
+    state.spawners.splice(targetIndex + (afterTarget ? 1 : 0), 0, source);
+    markDirty();
+    renderSidebar();
+    return true;
+  }
+
+  function reorderSpawnerByKeyboard(sourceUid, direction) {
+    const visible = visibleSpawnerUids();
+    const visibleIndex = visible.indexOf(sourceUid);
+    const targetUid = visible[visibleIndex + direction];
+    if (!targetUid) return;
+    if (reorderSpawner(sourceUid, targetUid, direction > 0)) {
+      setTimeout(() => listElement.querySelector(`[data-drag-spawner="${sourceUid}"]`)?.focus(), 0);
+    }
+  }
+
+  function clearSpawnerDropState() {
+    listElement.querySelectorAll(".spawner-card").forEach((card) => {
+      card.classList.remove("dragging", "drop-before", "drop-after");
+    });
+    dragPlacement = null;
+  }
+
+  function initializePanelResizers() {
+    const spawnerPanel = $(".spawner-panel");
+    const outputPanel = $(".output-panel");
+    const wideLayout = window.matchMedia("(min-width: 1181px)");
+    const minimumCenterWidth = 510;
+    const handleWidth = 16;
+
+    function sizes() {
+      return {
+        spawner: spawnerPanel.getBoundingClientRect().width,
+        output: outputPanel.getBoundingClientRect().width,
+        total: workspaceElement.getBoundingClientRect().width
+      };
+    }
+
+    function setPanelWidth(kind, requestedWidth) {
+      if (!wideLayout.matches) return;
+      const current = sizes();
+      const otherWidth = kind === "spawner" ? current.output : current.spawner;
+      const minimum = kind === "spawner" ? 230 : 300;
+      const maximum = Math.max(minimum, current.total - handleWidth - minimumCenterWidth - otherWidth);
+      const width = Math.min(maximum, Math.max(minimum, requestedWidth));
+      workspaceElement.style.setProperty(kind === "spawner" ? "--spawner-panel-width" : "--output-panel-width", `${Math.round(width)}px`);
+      const handle = $(`[data-resizer="${kind}"]`);
+      handle?.setAttribute("aria-valuenow", String(Math.round(width)));
+      handle?.setAttribute("aria-valuemin", String(minimum));
+      handle?.setAttribute("aria-valuemax", String(Math.round(maximum)));
+    }
+
+    document.querySelectorAll("[data-resizer]").forEach((handle) => {
+      handle.addEventListener("pointerdown", (event) => {
+        if (!wideLayout.matches || event.button !== 0) return;
+        const kind = handle.dataset.resizer;
+        const start = sizes();
+        const startX = event.clientX;
+        document.body.classList.add("panel-resizing");
+        handle.classList.add("active");
+        handle.setPointerCapture?.(event.pointerId);
+
+        const move = (moveEvent) => {
+          const delta = moveEvent.clientX - startX;
+          setPanelWidth(kind, kind === "spawner" ? start.spawner + delta : start.output - delta);
+        };
+        const stop = () => {
+          document.body.classList.remove("panel-resizing");
+          handle.classList.remove("active");
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", stop);
+          window.removeEventListener("pointercancel", stop);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", stop);
+        window.addEventListener("pointercancel", stop);
+        event.preventDefault();
+      });
+
+      handle.addEventListener("keydown", (event) => {
+        if (!wideLayout.matches || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+        const kind = handle.dataset.resizer;
+        const current = sizes();
+        const delta = event.key === "ArrowRight" ? 24 : -24;
+        setPanelWidth(kind, kind === "spawner" ? current.spawner + delta : current.output - delta);
+        event.preventDefault();
+      });
+    });
+
+    window.addEventListener("resize", () => {
+      if (!wideLayout.matches) return;
+      const current = sizes();
+      setPanelWidth("spawner", current.spawner);
+      setPanelWidth("output", current.output);
+    });
+
+    if (wideLayout.matches) {
+      const current = sizes();
+      setPanelWidth("spawner", current.spawner);
+      setPanelWidth("output", current.output);
+    }
   }
 
   function render() {
@@ -1209,6 +1468,59 @@
     } else if (action === "remove-member") {
       removeMember(button.dataset.spawnerUid, button.dataset.memberUid);
     }
+  });
+
+  listElement.addEventListener("dragstart", (event) => {
+    const handle = event.target.closest?.("[data-drag-spawner]");
+    if (!handle) return;
+    draggedSpawnerUid = handle.dataset.dragSpawner;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", draggedSpawnerUid);
+    handle.closest(".spawner-card")?.classList.add("dragging");
+  });
+
+  listElement.addEventListener("dragover", (event) => {
+    if (!draggedSpawnerUid) return;
+    const card = event.target.closest?.(".spawner-card[data-spawner-uid]");
+    if (!card) return;
+    if (card.dataset.spawnerUid === draggedSpawnerUid) {
+      listElement.querySelectorAll(".spawner-card").forEach((entry) => entry.classList.remove("drop-before", "drop-after"));
+      dragPlacement = null;
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const listBounds = listElement.getBoundingClientRect();
+    const edgeSize = Math.min(56, listBounds.height / 4);
+    if (event.clientY < listBounds.top + edgeSize) listElement.scrollTop -= 14;
+    else if (event.clientY > listBounds.bottom - edgeSize) listElement.scrollTop += 14;
+    const bounds = card.getBoundingClientRect();
+    const afterTarget = event.clientY >= bounds.top + bounds.height / 2;
+    listElement.querySelectorAll(".spawner-card").forEach((entry) => entry.classList.remove("drop-before", "drop-after"));
+    card.classList.add(afterTarget ? "drop-after" : "drop-before");
+    dragPlacement = { targetUid: card.dataset.spawnerUid, afterTarget };
+  });
+
+  listElement.addEventListener("drop", (event) => {
+    if (!draggedSpawnerUid || !dragPlacement) return;
+    event.preventDefault();
+    const sourceUid = draggedSpawnerUid;
+    const placement = dragPlacement;
+    clearSpawnerDropState();
+    draggedSpawnerUid = null;
+    if (reorderSpawner(sourceUid, placement.targetUid, placement.afterTarget)) showToast("Spawner order updated.");
+  });
+
+  listElement.addEventListener("dragend", () => {
+    draggedSpawnerUid = null;
+    clearSpawnerDropState();
+  });
+
+  listElement.addEventListener("keydown", (event) => {
+    const handle = event.target.closest?.("[data-drag-spawner]");
+    if (!handle || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+    reorderSpawnerByKeyboard(handle.dataset.dragSpawner, event.key === "ArrowDown" ? 1 : -1);
+    event.preventDefault();
   });
 
   $("#section-tabs").addEventListener("click", (event) => {
@@ -1243,9 +1555,13 @@
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     event.preventDefault();
-    handleAction(button.dataset.action);
+    void handleAction(button.dataset.action);
   });
 
+  searchElement.addEventListener("input", (event) => {
+    state.spawnerFilter = event.target.value;
+    renderSidebar();
+  });
   $("#add-spawner").addEventListener("click", addSpawner);
   $("#add-empty").addEventListener("click", addSpawner);
   $("#load-config").addEventListener("click", () => $("#config-file").click());
@@ -1256,11 +1572,13 @@
   });
   $("#generate").addEventListener("click", generateConfig);
   $("#generate-top").addEventListener("click", generateConfig);
+  copyConfigButtons.forEach((button) => button.addEventListener("click", () => void copyConfigText()));
   downloadButton.addEventListener("click", downloadConfig);
 
   populateList("pal-options", data.pals);
   populateList("item-options", data.items);
   populateList("active-skill-options", data.activeSkills);
   populateList("passive-skill-options", data.passiveSkills);
+  initializePanelResizers();
   render();
 })();
