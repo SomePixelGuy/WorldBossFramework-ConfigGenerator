@@ -27,7 +27,6 @@
     level: 5,
     designation: "alpha",
     uncapturable: true,
-    scale: 1.5,
     hpMultiplier: 1000,
     attackMultiplier: 1.5,
     defenseMultiplier: 20,
@@ -41,7 +40,6 @@
     level: 5,
     designation: "normal",
     uncapturable: true,
-    scale: 1.5,
     hpMultiplier: 1,
     attackMultiplier: 1,
     defenseMultiplier: 1,
@@ -76,7 +74,6 @@
       respawnPlayerRadius: 15000,
       memberSpacing: 800,
       arenaRadius: 15000,
-      blockBuilding: false,
       shopOfferEnabled: false,
       shopCurrencyCost: "",
       shopMaxPurchases: 0,
@@ -335,11 +332,8 @@
           ${inputField("Reward match radius (cm)", "matchRadius", spawner.matchRadius, { type: "number", min: 100, max: 20000, step: "any", help: "Players within this radius receive natural-defeat reward claims; 100–20,000 cm." })}
           ${inputField("Respawn player radius (cm)", "respawnPlayerRadius", spawner.respawnPlayerRadius, { type: "number", min: 1000, max: 100000, step: "any", help: "Players within this radius keep active bosses eligible for respawn checks; 1,000–100,000 cm." })}
           ${inputField("Arena radius (cm)", "arenaRadius", spawner.arenaRadius, { type: "number", min: 1000, max: 100000, step: "any", help: "Available radius for the encounter formation; 1,000–100,000 cm." })}
-          ${inputField("Member spacing (cm)", "memberSpacing", spawner.memberSpacing, { type: "number", min: 100, max: 10000, step: "any", help: "Base spacing multiplied by the largest member scale; 100–10,000 cm." })}
-        </div>`),
-      sectionCard("Arena policy", "This property is accepted for forward compatibility.", `
-        ${toggleRow("Block building", "blockBuilding", spawner.blockBuilding, "Currently suspended by WorldBossFramework; enabling it does not block construction in v0.7.1.")}
-        <div class="notice"><strong>Current limitation:</strong> Native arena building restrictions are disabled in the World Boss Framework v1.0.0 build.</div>`)
+          ${inputField("Member spacing (cm)", "memberSpacing", spawner.memberSpacing, { type: "number", min: 100, max: 10000, step: "any", help: "Center-to-center spacing between encounter members; 100–10,000 cm." })}
+        </div>`)
     ].join("");
   }
 
@@ -362,7 +356,6 @@
         ${inputField("Pal / NPC ID", "palId", member.palId, { scope: "member", index, list: "pal-options", help: "Exact character ID written to pal_id; 1–64 letters, numbers, underscores, dots, or hyphens." })}
         ${inputField("Level", "level", member.level, { scope: "member", index, type: "number", min: 1, max: 100, step: 1 })}
         ${selectField("Designation", "designation", member.designation, [["normal", "Normal"], ["alpha", "Alpha"], ["predator", "Predator"]], { scope: "member", index, help: "Alpha and Predator are mutually exclusive." })}
-        ${inputField("Scale", "scale", member.scale, { scope: "member", index, type: "number", min: 0.1, max: 10, step: "any", help: "Model scale multiplier from 0.1 to 10." })}
       </div>
       ${toggleRow("Uncapturable", "uncapturable", member.uncapturable, "Prevents this member from being captured.", { scope: "member", index })}
       ${memberNotice(member)}
@@ -693,7 +686,6 @@
     respawn_player_radius: ["respawnPlayerRadius", "value"],
     member_spacing: ["memberSpacing", "value"],
     arena_radius: ["arenaRadius", "value"],
-    block_building: ["blockBuilding", "boolean"],
     shop_offer_enabled: ["shopOfferEnabled", "boolean"],
     shop_currency_cost: ["shopCurrencyCost", "value"],
     shop_max_purchases: ["shopMaxPurchases", "value"],
@@ -707,7 +699,6 @@
     alpha: ["_alpha", "boolean"],
     predator: ["_predator", "boolean"],
     uncapturable: ["uncapturable", "boolean"],
-    scale: ["scale", "value"],
     hp_multiplier: ["hpMultiplier", "value"],
     attack_multiplier: ["attackMultiplier", "value"],
     defense_multiplier: ["defenseMultiplier", "value"],
@@ -834,6 +825,7 @@
       const memberMatch = remainder.match(/^([A-Za-z0-9_]+)\.([1-9][0-9]*)$/);
       if (memberMatch) {
         const index = Number(memberMatch[2]);
+        if (memberMatch[1] === "scale") return; // Retired field: accept and discard on import.
         const descriptor = memberLoadFields[memberMatch[1]];
         if (index > 16) errors.push(`Line ${lineNumber}: member index must be between 1 and 16.`);
         else if (!descriptor) errors.push(`Line ${lineNumber}: unsupported indexed field “${memberMatch[1]}”.`);
@@ -844,6 +836,7 @@
         return;
       }
 
+      if (remainder === "block_building") return; // Retired field: accept and discard on import.
       const descriptor = spawnerLoadFields[remainder];
       if (!descriptor) {
         errors.push(`Line ${lineNumber}: unsupported spawner field “${remainder}”.`);
@@ -975,11 +968,8 @@
       } else if (String(spawner.shopCurrencyCost).trim() !== "") {
         number(spawner.shopCurrencyCost, `${prefix}: Shop currency cost`, 1, 9000000000000, true);
       }
-      if (spawner.blockBuilding) warnings.push(`${prefix}: Block building is accepted but inactive in WorldBossFramework v0.7.1.`);
-
       if (!spawner.members.length) errors.push(`${prefix}: At least one member is required.`);
       if (spawner.members.length > 16) errors.push(`${prefix}: No more than 16 members are allowed.`);
-      let largestScale = 1;
       spawner.members.forEach((member, memberIndex) => {
         const memberPrefix = `${prefix}, member ${memberIndex + 1}`;
         const palId = String(member.palId || "").trim();
@@ -989,8 +979,6 @@
         if (special.preserved && member.designation !== "normal") warnings.push(`${memberPrefix}: Special IDs ignore Alpha and Predator settings.`);
         if (special.preserveSkills && member.activeSkills.some((skill) => String(skill).trim())) warnings.push(`${memberPrefix}: RAID_ and GYM_ IDs preserve native active skills; configured active skills are ignored.`);
         number(member.level, `${memberPrefix}: Level`, 1, 100, true);
-        const scale = number(member.scale, `${memberPrefix}: Scale`, 0.1, 10);
-        if (scale !== null) largestScale = Math.max(largestScale, scale);
         number(member.hpMultiplier, `${memberPrefix}: HP multiplier`, 0.01, 1000);
         number(member.attackMultiplier, `${memberPrefix}: Attack multiplier`, 0.01, 1000);
         number(member.defenseMultiplier, `${memberPrefix}: Defense multiplier`, 0.01, 1000);
@@ -1014,11 +1002,10 @@
       });
 
       if (spacing !== null && arenaRadius !== null && respawnRadius !== null && spawner.members.length) {
-        const effectiveSpacing = spacing * largestScale;
         const count = spawner.members.length;
-        const radius = count > 1 ? effectiveSpacing / (2 * Math.sin(Math.PI / count)) : 0;
-        if (radius + effectiveSpacing * 0.5 > Math.min(arenaRadius, respawnRadius)) {
-          errors.push(`${prefix}: Member formation exceeds the arena or respawn radius; reduce spacing/scale or enlarge both radii.`);
+        const radius = count > 1 ? spacing / (2 * Math.sin(Math.PI / count)) : 0;
+        if (radius + spacing * 0.5 > Math.min(arenaRadius, respawnRadius)) {
+          errors.push(`${prefix}: Member formation exceeds the arena or respawn radius; reduce spacing or enlarge both radii.`);
         }
       }
 
@@ -1068,7 +1055,7 @@
 
   function renderConfig() {
     const lines = [
-      "; WorldBossFramework v0.7.1 spawner definitions",
+      "; WorldBossFramework v1.0.0 spawner definitions",
       "; Generated by World Boss Config Generator",
       "; Changes take effect after a full server restart.",
       ""
@@ -1092,7 +1079,6 @@
       const firstTitle = String(spawner.firstDefeatTitle || "").trim();
       if (firstTitle) lines.push(`${root}.first_defeat_title = ${firstTitle}`);
       lines.push(`${root}.arena_radius = ${formatNumber(spawner.arenaRadius)}`);
-      lines.push(`${root}.block_building = ${spawner.blockBuilding ? "true" : "false"}`);
       lines.push(`${root}.member_spacing = ${formatNumber(spawner.memberSpacing)}`);
       lines.push(`${root}.shop_offer_enabled = ${spawner.shopOfferEnabled ? "true" : "false"}`);
       if (String(spawner.shopCurrencyCost).trim()) lines.push(`${root}.shop_currency_cost = ${formatNumber(spawner.shopCurrencyCost)}`);
@@ -1105,7 +1091,6 @@
         lines.push("");
         lines.push(`${root}.pal_id.${memberIndex} = ${String(member.palId).trim()}`);
         lines.push(`${root}.level.${memberIndex} = ${formatNumber(member.level)}`);
-        lines.push(`${root}.scale.${memberIndex} = ${formatFloat(member.scale)}`);
         lines.push(`${root}.alpha.${memberIndex} = ${member.designation === "alpha" ? "true" : "false"}`);
         lines.push(`${root}.predator.${memberIndex} = ${member.designation === "predator" ? "true" : "false"}`);
         lines.push(`${root}.uncapturable.${memberIndex} = ${member.uncapturable ? "true" : "false"}`);
