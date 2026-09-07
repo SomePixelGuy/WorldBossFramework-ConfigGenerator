@@ -77,7 +77,7 @@
       queueOrder: 1000,
       mapX: "",
       mapY: "",
-      groundClearance: 100,
+      worldZ: "",
       rotationPitch: 0,
       rotationYaw: 0,
       rotationRoll: 0,
@@ -334,24 +334,23 @@
   }
 
   function renderLocation(spawner) {
-    const mapX = Number(spawner.mapX);
-    const mapY = Number(spawner.mapY);
+    const mapX = String(spawner.mapX ?? "").trim() === "" ? null : Number(spawner.mapX);
+    const mapY = String(spawner.mapY ?? "").trim() === "" ? null : Number(spawner.mapY);
+    const worldZ = String(spawner.worldZ ?? "").trim() === "" ? null : Number(spawner.worldZ);
     const worldX = Number.isFinite(mapY) ? mapY * 459 - 123888 : null;
     const worldY = Number.isFinite(mapX) ? mapX * 459 + 158000 : null;
-    const preview = worldX === null || worldY === null
-      ? "Enter valid map coordinates to calculate the approximate world position."
-      : `Approximate world position: X ${formatNumber(worldX)}, Y ${formatNumber(worldY)}. Terrain height is resolved at runtime.`;
+    const preview = worldX === null || worldY === null || !Number.isFinite(worldZ)
+      ? "Enter valid Map X, Map Y, and World Z values to calculate the full world position."
+      : `World position: X ${formatNumber(worldX)}, Y ${formatNumber(worldY)}, Z ${formatNumber(worldZ)}.`;
     return [
-      sectionCard("Map coordinates", "Use the coordinates shown by Palworld's in-game map overlay.", `
-        <div class="field-grid">
+      sectionCard("Map coordinates", "Use !worldboss pos at the destination to read Map X, Map Y, and World Z.", `
+        <div class="field-grid three">
           ${inputField("Map X", "mapX", spawner.mapX, { type: "number", min: -10000, max: 10000, step: "any", help: "Required value from −10,000 to 10,000." })}
           ${inputField("Map Y", "mapY", spawner.mapY, { type: "number", min: -10000, max: 10000, step: "any", help: "Required value from −10,000 to 10,000." })}
+          ${inputField("World Z", "worldZ", spawner.worldZ, { type: "number", min: -1000000, max: 1000000, step: "any", help: "Required world-height value reported by !worldboss pos." })}
         </div>
         <div class="notice" id="world-coordinate-preview"><strong>Coordinate conversion:</strong> ${preview}</div>`, "coordinate-card"),
-      sectionCard("Placement", "Fine-tune height and orientation at the resolved terrain position.", `
-        <div class="field-grid">
-          ${inputField("Ground clearance", "groundClearance", spawner.groundClearance, { type: "number", min: 10, max: 5000, step: "any", help: "Centimeters above terrain; 10–5,000." })}
-        </div>
+      sectionCard("Placement", "Configure the native spawner orientation.", `
         <div class="field-grid three">
           ${inputField("Pitch", "rotationPitch", spawner.rotationPitch, { type: "number", min: -360, max: 360, step: "any", help: "Rotates forward/back around the Y axis." })}
           ${inputField("Yaw", "rotationYaw", spawner.rotationYaw, { type: "number", min: -360, max: 360, step: "any", help: "Rotates left/right around the vertical Z axis and rotates multi-member placement." })}
@@ -531,13 +530,14 @@
         : `${reward.count} × ${reward.item || "Item ID required"}`;
     });
     if (state.activeSection === "location") {
-      const mapX = Number(spawner.mapX);
-      const mapY = Number(spawner.mapY);
+      const mapX = String(spawner.mapX ?? "").trim() === "" ? null : Number(spawner.mapX);
+      const mapY = String(spawner.mapY ?? "").trim() === "" ? null : Number(spawner.mapY);
+      const worldZ = String(spawner.worldZ ?? "").trim() === "" ? null : Number(spawner.worldZ);
       const preview = $("#world-coordinate-preview");
       if (preview) {
-        preview.innerHTML = Number.isFinite(mapX) && Number.isFinite(mapY)
-          ? `<strong>Coordinate conversion:</strong> Approximate world position: X ${formatNumber(mapY * 459 - 123888)}, Y ${formatNumber(mapX * 459 + 158000)}. Terrain height is resolved at runtime.`
-          : `<strong>Coordinate conversion:</strong> Enter valid map coordinates to calculate the approximate world position.`;
+        preview.innerHTML = Number.isFinite(mapX) && Number.isFinite(mapY) && Number.isFinite(worldZ)
+          ? `<strong>Coordinate conversion:</strong> World position: X ${formatNumber(mapY * 459 - 123888)}, Y ${formatNumber(mapX * 459 + 158000)}, Z ${formatNumber(worldZ)}.`
+          : `<strong>Coordinate conversion:</strong> Enter valid Map X, Map Y, and World Z values to calculate the full world position.`;
       }
     }
   }
@@ -812,7 +812,7 @@
     queue_order: ["queueOrder", "value"],
     map_x: ["mapX", "value"],
     map_y: ["mapY", "value"],
-    ground_clearance: ["groundClearance", "value"],
+    world_z: ["worldZ", "value"],
     rotation_pitch: ["rotationPitch", "value"],
     rotation_yaw: ["rotationYaw", "value"],
     rotation_roll: ["rotationRoll", "value"],
@@ -970,7 +970,7 @@
         return;
       }
 
-      if (remainder === "block_building") return; // Retired field: accept and discard on import.
+      if (remainder === "block_building" || remainder === "ground_clearance") return; // Retired fields: accept and discard on import.
       const descriptor = spawnerLoadFields[remainder];
       if (!descriptor) {
         errors.push(`Line ${lineNumber}: unsupported spawner field “${remainder}”.`);
@@ -1088,7 +1088,7 @@
       number(spawner.queueOrder, `${prefix}: Queue order`, 0, 1000000, true);
       number(spawner.mapX, `${prefix}: Map X`, -10000, 10000);
       number(spawner.mapY, `${prefix}: Map Y`, -10000, 10000);
-      number(spawner.groundClearance, `${prefix}: Ground clearance`, 10, 5000);
+      number(spawner.worldZ, `${prefix}: World Z`, -1000000, 1000000);
       number(spawner.rotationPitch, `${prefix}: Rotation pitch`, -360, 360);
       number(spawner.rotationYaw, `${prefix}: Rotation yaw`, -360, 360);
       number(spawner.rotationRoll, `${prefix}: Rotation roll`, -360, 360);
@@ -1206,7 +1206,7 @@
       lines.push(`${root}.queue_order = ${formatNumber(spawner.queueOrder)}`);
       lines.push(`${root}.map_x = ${formatNumber(spawner.mapX)}`);
       lines.push(`${root}.map_y = ${formatNumber(spawner.mapY)}`);
-      lines.push(`${root}.ground_clearance = ${formatNumber(spawner.groundClearance)}`);
+      lines.push(`${root}.world_z = ${formatNumber(spawner.worldZ)}`);
       lines.push(`${root}.rotation_pitch = ${formatNumber(spawner.rotationPitch)}`);
       lines.push(`${root}.rotation_yaw = ${formatNumber(spawner.rotationYaw)}`);
       lines.push(`${root}.rotation_roll = ${formatNumber(spawner.rotationRoll)}`);

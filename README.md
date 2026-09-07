@@ -5,11 +5,14 @@ A browser-based editor for creating and validating `WorldBossFramework` `spawner
 ## Use
 
 1. Open `index.html` in a modern browser.
-2. Add a new spawner or load an existing `spawners.config` file.
-3. Edit the spawner, member, reward, and shop settings.
-4. Select **Generate Config** to validate the configuration.
-5. Select **Copy Config Text** or **Download spawners.config**.
-6. Install the resulting file at `ue4ss/Mods/WorldBossFramework/spawners.config` and fully restart the server.
+2. In-game, stand at each encounter location and run `!worldboss pos` to read its Map X, Map Y, and World Z values.
+3. Add a new spawner or load an existing `spawners.config` file, then enter all three position values.
+4. Edit the remaining spawner, member, reward, and shop settings.
+5. Select **Generate Config** to validate the configuration.
+6. Select **Copy Config Text** or **Download spawners.config**.
+7. Install the resulting file at `ue4ss/Mods/WorldBossFramework/spawners.config` and fully restart the server.
+
+Every spawner requires a numeric `world_z` value. The generator will load older files so they can be migrated, but it will refuse to generate output until every spawner has a valid World Z value. `ground_clearance` is retired because the framework now uses the configured World Z directly and performs no runtime terrain-height scan.
 
 ## Large-config editing tools
 
