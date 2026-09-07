@@ -74,7 +74,7 @@
       title: "",
       firstDefeatTitle: "",
       autoEnabled: false,
-      queueOrder: 1000,
+      spawnTimer: 7200,
       mapX: "",
       mapY: "",
       worldZ: "",
@@ -89,7 +89,6 @@
       shopCurrencyCost: "",
       shopMaxPurchases: 0,
       shopCooldownSeconds: 0,
-      shopResetSchedule: false,
       members: [],
       rewards: [],
       activeMemberUid: null,
@@ -105,7 +104,7 @@
     Object.assign(spawner, {
       title: number === 1 ? "The Woolen Calamity" : `World Boss ${number}`,
       autoEnabled: true,
-      queueOrder: number * 10,
+      spawnTimer: 7200,
       mapX: number === 1 ? 95 : 0,
       mapY: number === 1 ? -520 : 0,
       shopCurrencyCost: 1000,
@@ -319,16 +318,16 @@
 
   function renderBasics(spawner) {
     return [
-      sectionCard("Identity", "Used in commands, announcements, and the automatic encounter queue.", `
+      sectionCard("Identity", "Used in commands, announcements, and independent encounter scheduling.", `
         <div class="field-grid">
-          ${inputField("Spawner ID", "id", spawner.id, { help: "1–32 letters, numbers, underscores, or hyphens. Used by !worldboss summon.", placeholder: "frost_peak" })}
+          ${inputField("Spawner ID", "id", spawner.id, { help: "1–32 letters, numbers, underscores, or hyphens. Used by admin spawn, kill, and status commands.", placeholder: "frost_peak" })}
           ${inputField("Display title", "title", spawner.title, { help: "The boss name shown in server announcements.", placeholder: "The Frozen Tyrant" })}
           ${inputField("First-defeat title ID", "firstDefeatTitle", spawner.firstDefeatTitle, { span: true, help: "Optional PlayerTitleFramework title ID. Leave blank to grant no title.", placeholder: "world_boss_champion" })}
-          ${inputField("Queue order", "queueOrder", spawner.queueOrder, { type: "number", min: 0, max: 1000000, step: 1, help: "Integer from 0 to 1,000,000." })}
+          ${inputField("Spawn timer (seconds)", "spawnTimer", spawner.spawnTimer, { type: "number", min: 1, max: 2592000, step: 1, help: "Cooldown after this boss is killed or captured; 1 second to 30 days. The first automatic spawn is immediate." })}
         </div>`),
-      sectionCard("Availability", "Choose whether this definition can load and enter the automatic queue.", `
+      sectionCard("Availability", "Choose whether this definition can load and schedule itself automatically.", `
         ${toggleRow("Spawner enabled", "enabled", spawner.enabled, "Disabled entries remain in the file but cannot be used.")}
-        ${toggleRow("Automatic spawning", "autoEnabled", spawner.autoEnabled, "Adds this spawner to the controller's automatic encounter queue.")}
+        ${toggleRow("Automatic spawning", "autoEnabled", spawner.autoEnabled, "Makes this spawner immediately due on first activation, then uses its own spawn timer after each defeat.")}
       `)
     ].join("");
   }
@@ -343,11 +342,11 @@
       ? "Enter valid Map X, Map Y, and World Z values to calculate the full world position."
       : `World position: X ${formatNumber(worldX)}, Y ${formatNumber(worldY)}, Z ${formatNumber(worldZ)}.`;
     return [
-      sectionCard("Map coordinates", "Use !worldboss pos at the destination to read Map X, Map Y, and World Z.", `
+      sectionCard("Map coordinates", "Use !pos or !p at the destination to read Map X, Map Y, and World Z.", `
         <div class="field-grid three">
           ${inputField("Map X", "mapX", spawner.mapX, { type: "number", min: -10000, max: 10000, step: "any", help: "Required value from −10,000 to 10,000." })}
           ${inputField("Map Y", "mapY", spawner.mapY, { type: "number", min: -10000, max: 10000, step: "any", help: "Required value from −10,000 to 10,000." })}
-          ${inputField("World Z", "worldZ", spawner.worldZ, { type: "number", min: -1000000, max: 1000000, step: "any", help: "Required world-height value reported by !worldboss pos." })}
+          ${inputField("World Z", "worldZ", spawner.worldZ, { type: "number", min: -1000000, max: 1000000, step: "any", help: "Required world-height value reported by !pos or !p." })}
         </div>
         <div class="notice" id="world-coordinate-preview"><strong>Coordinate conversion:</strong> ${preview}</div>`, "coordinate-card"),
       sectionCard("Placement", "Configure the native spawner orientation.", `
@@ -382,7 +381,7 @@
     const member = selectedMember(spawner);
     const index = member ? spawner.members.indexOf(member) : -1;
     return `<div class="collection-toolbar">
-      <p>Select a member from the encounter queue card to edit it here. Maximum 16.</p>
+      <p>Select a member from the spawner card to edit it here. Maximum 16.</p>
       <button class="button button-secondary button-small" type="button" data-action="add-member">Add Member</button>
     </div>
     ${member ? sectionCard(`Member ${index + 1}`, `${palDisplayName(member.palId)}${member.palId ? ` · ${member.palId}` : ""} · Level ${member.level}`, `
@@ -454,14 +453,13 @@
 
   function renderShop(spawner) {
     return [
-      sectionCard("Early summon offer", "Optionally contribute a virtual-currency offer to ServerShopFramework.", `
+      sectionCard("Shop-only summon offer", "Optionally contribute a virtual-currency-only summon to ServerShopFramework. Shop and automatic spawning cannot both be enabled.", `
         ${toggleRow("Enable shop offer", "shopOfferEnabled", spawner.shopOfferEnabled, `Creates the offer ID worldboss_${escapeHtml(spawner.id || "<spawner_id>")}.`)}
         <div class="field-grid">
           ${inputField("Currency cost", "shopCurrencyCost", spawner.shopCurrencyCost, { type: "number", min: 1, max: 9000000000000, step: 1, help: "Required when the offer is enabled; 1–9,000,000,000,000." })}
           ${inputField("Maximum purchases", "shopMaxPurchases", spawner.shopMaxPurchases, { type: "number", min: 0, max: 1000000, step: 1, help: "0 means unlimited; otherwise 1–1,000,000." })}
           ${inputField("Cooldown in seconds", "shopCooldownSeconds", spawner.shopCooldownSeconds, { type: "number", min: 0, max: 31536000, step: 1, help: "0 disables cooldown; maximum one year." })}
         </div>
-        ${toggleRow("Reset automatic schedule", "shopResetSchedule", spawner.shopResetSchedule, "After the summoned boss is defeated, start a full interval instead of resuming the paused countdown.")}
         <div class="notice"><strong>Dependency:</strong> Shop offers require ServerShopFramework API 1. Failed summons use its virtual-currency refund path.</div>`)
     ].join("");
   }
@@ -809,7 +807,7 @@
     title: ["title", "value"],
     first_defeat_title: ["firstDefeatTitle", "value"],
     auto_enabled: ["autoEnabled", "boolean"],
-    queue_order: ["queueOrder", "value"],
+    spawn_timer: ["spawnTimer", "value"],
     map_x: ["mapX", "value"],
     map_y: ["mapY", "value"],
     world_z: ["worldZ", "value"],
@@ -823,8 +821,7 @@
     shop_offer_enabled: ["shopOfferEnabled", "boolean"],
     shop_currency_cost: ["shopCurrencyCost", "value"],
     shop_max_purchases: ["shopMaxPurchases", "value"],
-    shop_cooldown_seconds: ["shopCooldownSeconds", "value"],
-    shop_reset_schedule: ["shopResetSchedule", "boolean"]
+    shop_cooldown_seconds: ["shopCooldownSeconds", "value"]
   };
 
   const memberLoadFields = {
@@ -970,7 +967,8 @@
         return;
       }
 
-      if (remainder === "block_building" || remainder === "ground_clearance") return; // Retired fields: accept and discard on import.
+      if (remainder === "block_building" || remainder === "ground_clearance"
+        || remainder === "queue_order" || remainder === "shop_reset_schedule") return; // Retired fields: accept and discard on import.
       const descriptor = spawnerLoadFields[remainder];
       if (!descriptor) {
         errors.push(`Line ${lineNumber}: unsupported spawner field “${remainder}”.`);
@@ -1085,7 +1083,7 @@
       if (firstTitle && !/^[A-Za-z0-9_.-]{1,96}$/.test(firstTitle)) errors.push(`${prefix}: First-defeat title ID is invalid.`);
       if (firstTitle) warnings.push(`${prefix}: First-defeat title rewards require PlayerTitleFramework.`);
 
-      number(spawner.queueOrder, `${prefix}: Queue order`, 0, 1000000, true);
+      number(spawner.spawnTimer, `${prefix}: Spawn timer`, 1, 2592000, true);
       number(spawner.mapX, `${prefix}: Map X`, -10000, 10000);
       number(spawner.mapY, `${prefix}: Map Y`, -10000, 10000);
       number(spawner.worldZ, `${prefix}: World Z`, -1000000, 1000000);
@@ -1100,7 +1098,8 @@
       number(spawner.shopCooldownSeconds, `${prefix}: Shop cooldown`, 0, 31536000, true);
       if (spawner.shopOfferEnabled) {
         number(spawner.shopCurrencyCost, `${prefix}: Shop currency cost`, 1, 9000000000000, true);
-        warnings.push(`${prefix}: Early-summon offers require ServerShopFramework API 1.`);
+        warnings.push(`${prefix}: Shop-only summon offers require ServerShopFramework API 1.`);
+        if (spawner.autoEnabled) errors.push(`${prefix}: Automatic spawning and shop summoning cannot both be enabled.`);
       } else if (String(spawner.shopCurrencyCost).trim() !== "") {
         number(spawner.shopCurrencyCost, `${prefix}: Shop currency cost`, 1, 9000000000000, true);
       }
@@ -1203,7 +1202,7 @@
       lines.push(`${root}.enabled = ${spawner.enabled ? "true" : "false"}`);
       lines.push(`${root}.title = ${quoteConfig(String(spawner.title).trim())}`);
       lines.push(`${root}.auto_enabled = ${spawner.autoEnabled ? "true" : "false"}`);
-      lines.push(`${root}.queue_order = ${formatNumber(spawner.queueOrder)}`);
+      lines.push(`${root}.spawn_timer = ${formatNumber(spawner.spawnTimer)}`);
       lines.push(`${root}.map_x = ${formatNumber(spawner.mapX)}`);
       lines.push(`${root}.map_y = ${formatNumber(spawner.mapY)}`);
       lines.push(`${root}.world_z = ${formatNumber(spawner.worldZ)}`);
@@ -1220,7 +1219,6 @@
       if (String(spawner.shopCurrencyCost).trim()) lines.push(`${root}.shop_currency_cost = ${formatNumber(spawner.shopCurrencyCost)}`);
       lines.push(`${root}.shop_max_purchases = ${formatNumber(spawner.shopMaxPurchases)}`);
       lines.push(`${root}.shop_cooldown_seconds = ${formatNumber(spawner.shopCooldownSeconds)}`);
-      lines.push(`${root}.shop_reset_schedule = ${spawner.shopResetSchedule ? "true" : "false"}`);
 
       spawner.members.forEach((member, index) => {
         const memberIndex = index + 1;
