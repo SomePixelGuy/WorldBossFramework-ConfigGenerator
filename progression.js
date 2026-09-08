@@ -6,11 +6,11 @@
   const specs = {
     titles: {
       owner:'PlayerTitleFramework', noun:'Title',
-      defaults:{announce_new_titles:true, online_broadcast_cooldown_seconds:'15', untitled_label:'No Title'},
-      labels:{announce_new_titles:'Announce newly earned titles', online_broadcast_cooldown_seconds:'Online title broadcast cooldown (seconds)', untitled_label:'Untitled player label'},
-      numbers:{online_broadcast_cooldown_seconds:[0,3600]},
+      defaults:{announce_new_titles:true, online_broadcast_cooldown_seconds:'15', titles_per_page:'10', untitled_label:'No Title'},
+      labels:{announce_new_titles:'Announce newly earned titles', online_broadcast_cooldown_seconds:'Private player list cooldown (seconds)', titles_per_page:'Titles per page', untitled_label:'Untitled player label'},
+      numbers:{online_broadcast_cooldown_seconds:[0,3600],titles_per_page:[1,50]},
       permissions:'[nodes]\nplayertitleframework.list = allow\nplayertitleframework.online = allow\nplayertitleframework.select = allow\nplayertitleframework.grant = deny\nplayertitleframework.revoke = deny\n',
-      hint:'Title announcement tokens: [Player Name], [Title], [Title ID]. Title rewards support items and owned Pals. They are queued when a title is first granted.',
+      hint:'Title announcement tokens: [Player Name], [Title], [Title ID]. Title commands: !title help, !title list [page], !title players, !title add/take @Player <id>. Command names cannot be title IDs. Title rewards support items and owned Pals. They are queued when a title is first granted.',
     },
     levels: {
       owner:'LevelUpAnnouncements', noun:'Milestone',
@@ -21,6 +21,7 @@
       hint:'Announcement tokens: [Player Name], [Raw Player Name], [Player Title], [level], [old level], [new level]. Reward notification tokens: [levels], [level count]. Crossed rewards are queued independently of crossed announcement settings.',
     },
   };
+  const reservedTitleIds = new Set(['help','list','players','add','take','none','title','titles','titlesonline','titlesonlne','titlegrant','titlerevoke','titlerewards','shop','buy','worldboss','pos','p','claimrewards','commands']);
   for (const [page,spec] of Object.entries(specs)) buildEditor(page,spec);
   function buildEditor(page,spec) {
     const titles=page==='titles';
@@ -66,6 +67,7 @@
         const key=titles?x.id.toLowerCase():String(Number(x.id));
         if(seen.has(key))errors.push(`Duplicate ${titles?'title ID':'level'}: ${x.id}`);seen.add(key);
         if(titles) {
+          if(reservedTitleIds.has(x.id.toLowerCase()))errors.push(`${x.id}: this title ID is reserved for a command; choose a different ID.`);
           if(!/^[A-Za-z_][A-Za-z0-9_]{0,95}$/.test(x.id))errors.push(`${x.id||'Title'}: ID must start with a letter or underscore and contain only letters, digits or underscores (maximum 96).`);
           text(x.name,64,x.id+' display name',true);text(x.announcement,512,x.id+' announcement');
         } else {

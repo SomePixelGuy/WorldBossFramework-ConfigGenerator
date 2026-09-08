@@ -96,7 +96,7 @@ Each page has independent settings, a searchable list, add/duplicate/remove cont
 
 ### Player Titles
 
-Edit announcement settings, the online-title broadcast cooldown (0–3600 seconds), and the untitled label. Add titles with a unique ID, display name, optional announcement, and item/owned-Pal rewards. A blank announcement exports no override and uses the runtime default. Display names support 64 characters. Title IDs use a leading letter/underscore and up to 96 letters, digits, or underscores.
+Edit announcement settings, the private online-player list cooldown (0–3600 seconds), titles per page (1–50), and the untitled label. Add titles with a unique ID, display name, optional announcement, and item/owned-Pal rewards. A blank announcement exports no override and uses the runtime default. Display names support 64 characters. Title IDs use a leading letter/underscore and up to 96 letters, digits, or underscores.
 
 The exporter uses the actual title schema:
 
@@ -141,3 +141,14 @@ Install the generated files at:
 If the installed Palladium uses a fallback location, use the active settings path shown by that installation. Both mods queue rewards through PixelsPalmodCore for `!claimrewards`.
 
 This editor update leaves `app.js`, `shop.js`, `styles.css`, `shop.css`, and `data.js` unchanged. New layout rules are scoped to `progression.css`. No deployment or backend mod patch is included. JavaScript syntax and parser compatibility were reviewed; browser interaction and live config imports remain to be checked in your environment.
+
+
+## Player Title command cleanup
+
+The title page now exports `titles_per_page` (default 10, supported 1–50) for `!title list [page]`. The existing `online_broadcast_cooldown_seconds` key remains compatible, but now controls each caller’s private `!title players` request cooldown; native server admins and Palladium ADMINS bypass it.
+
+Use `!title` or `!title help` for help, `!title <id>` to select an earned title, `!title none` to clear it, `!title list [page]` to list earned titles, and `!title players` for a private player/title list. Administration uses `!title add @Player <id>` and `!title take @Player <id>`; quote player names containing spaces as `@"Player Name"`.
+
+The editor rejects IDs matching title subcommands, retired title commands, and known project commands. The server also checks commands registered dynamically in PixelsPalmodCore; third-party command names may therefore require server-side verification. Title display names may still contain those words. Imported reserved IDs are shown as validation errors so they can be renamed; runtime reserved titles are ignored and cannot be granted through chat, Shop, or reward providers.
+
+Deploy the accompanying **PlayerTitleFramework_Command-Cleanup_v1.0.0** patch for the new settings and commands. This pass changes only the progression page logic and README in the editor; all manually styled buttons and member lists are preserved.
