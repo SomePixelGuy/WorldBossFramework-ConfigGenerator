@@ -3,11 +3,11 @@
   const {escapeHtml:e, name:displayName, copy, download} = window.GeneratorCore;
   const $ = id => document.getElementById(id);
   let serial = 0;
-  const actionRules = [['alpha','Defeat Alpha Pal'],['predator','Defeat Predator Pal'],['tower','Defeat Tower Boss'],['raid','Complete Raid Boss battle'],['new_pal','Capture a new Pal'],['capture_five','Capture completion / Mimog reward'],['main_quest','Complete Main Quest'],['side_quest','Complete Side Quest']];
-  const actionDefaults = () => ({'action_rewards.enabled':false,'action_rewards.announce':true,'action_rewards.worldboss_installed':true,'action_rewards.dungeon.credits':'0',...Object.fromEntries(actionRules.map(([id])=>[`action_rewards.${id}.credits`,'0']))});
-  const defaults = () => ({...actionDefaults(),currency_name:'Credits',starting_balance:'0',page_size:'6',allow_free_offers:false,currency_admin_uids:''});
+  const actionRules = [['alpha','Defeat Alpha Pal'],['predator','Defeat Predator Pal'],['tower','Defeat Tower Boss'],['raid','Complete Raid Boss battle'],['dungeon','Defeat dungeon Alpha / clear dungeon'],['new_pal','Capture a new Pal'],['capture_five','Capture 5 of one Pal species (once)'],['main_quest','Complete Main Quest'],['side_quest','Complete Side Quest']];
+  const actionDefaults = () => ({'action_rewards.enabled':false,'action_rewards.announce':true,'action_rewards.worldboss_installed':true,...Object.fromEntries(actionRules.map(([id])=>[`action_rewards.${id}.credits`,'0']))});
+  const defaults = () => ({...actionDefaults(),currency_name:'Credits',announce_currency_acquisition:true,transfers_enabled:true,starting_balance:'0',page_size:'6',allow_free_offers:false,currency_admin_uids:''});
   const offer = () => ({uid:++serial,id:`offer_${serial}`,enabled:false,name:'New offer',description:'',category:'supplies',max_purchases:'0',cooldown_seconds:'0',costs:[{kind:'currency',amount:'100',id:'',level:'0'}],rewards:[{kind:'item',id:'PalSphere',amount:'10',level:'0'}],extra:[]});
-  const state = {settings:defaults(),offers:[],selected:null,extra:[],sections:'',filter:''};
+  const state = {settings:defaults(),offers:[],selected:null,extra:[],sections:'',filter:'',coreReminder:'600'};
   const selected = () => state.offers.find(o=>o.uid === state.selected);
   const button = (label, action, attr='') => `<button type="button" class="button button-secondary button-small" data-action="${action}" ${attr}>${label}</button>`;
   function field(label,key,value, type='text',attr='') {
@@ -36,7 +36,7 @@
   function render() {
     renderList(); const o=selected(); $('shop-title').textContent=o?o.name||o.id:'Shop settings';
     if (!o) {
-      $('shop-form').innerHTML=`<div class="shop-fields">${field('Currency display name','currency_name',state.settings.currency_name)}${field('Starting Credits','starting_balance',state.settings.starting_balance,'number','min="0" max="9000000000000" step="1"')}${field('Offers per chat page','page_size',state.settings.page_size,'number','min="1" max="10" step="1"')}${flag('Allow free offers','allow_free_offers',state.settings.allow_free_offers)}<label>Currency admin UIDs (one per line)<textarea data-key="currency_admin_uids">${e(state.settings.currency_admin_uids)}</textarea></label></div><p class="shop-note">Gold Coins use item ID Money; Dog Coins use DogCoin. Credits are the currency kind. Costs in Pals consume active-party Pals, not Palbox Pals.</p><section><h3>Action rewards</h3><div class="shop-fields">${flag('Enable action rewards','action_rewards.enabled',state.settings['action_rewards.enabled'])}${flag('Announce action Credits','action_rewards.announce',state.settings['action_rewards.announce'])}${flag('WorldBossFramework installed','action_rewards.worldboss_installed',state.settings['action_rewards.worldboss_installed'])}${actionRules.map(([id,label])=>field(label+' — Credits',`action_rewards.${id}.credits`,state.settings[`action_rewards.${id}.credits`],'number','min="0" max="1000000000" step="1"')).join('')}</div><p class="shop-note">Requires the ServerShopFramework Action Rewards patch. Zero disables a reward. Wild Alpha and Predator kills exclude World Bosses through the matching WorldBossFramework patch. Tower and raid rewards follow native battle completion.</p><p class="shop-note">Capture completion follows the game’s relic-award notification, not a calculated five-capture threshold. Dedicated-server delivery of this notification requires live verification. New-Pal rewards require a confirmed first capture; quests pay once per quest and player.</p><p class="shop-note">Dungeon completion: unavailable — no verified completion hook. It is not replaced with a dungeon boss kill or an exit interaction.</p></section>`;
+      $('shop-form').innerHTML=`<div class="shop-fields">${field('Currency display name','currency_name',state.settings.currency_name)}${field('Starting Credits','starting_balance',state.settings.starting_balance,'number','min="0" max="9000000000000" step="1"')}${field('Offers per chat page','page_size',state.settings.page_size,'number','min="1" max="10" step="1"')}${flag('Allow free offers','allow_free_offers',state.settings.allow_free_offers)}${flag('Announce acquired Credits','announce_currency_acquisition',state.settings.announce_currency_acquisition)}${flag('Allow Credit transfers','transfers_enabled',state.settings.transfers_enabled)}<label>Currency admin UIDs (one per line)<textarea data-key="currency_admin_uids">${e(state.settings.currency_admin_uids)}</textarea></label></div><p class="shop-note">Gold Coins use item ID Money; Dog Coins use DogCoin. Credits are the currency kind. Costs in Pals consume active-party Pals, not Palbox Pals.</p><section id="shop-action-rewards"><h3>Action rewards</h3><div class="shop-fields">${flag('Enable action rewards','action_rewards.enabled',state.settings['action_rewards.enabled'])}${flag('Announce action Credits','action_rewards.announce',state.settings['action_rewards.announce'])}${flag('WorldBossFramework installed','action_rewards.worldboss_installed',state.settings['action_rewards.worldboss_installed'])}${actionRules.map(([id,label])=>field(label+' — Credits',`action_rewards.${id}.credits`,state.settings[`action_rewards.${id}.credits`],'number','min="0" max="1000000000" step="1"')).join('')}</div><p class="shop-note">Requires the ServerShopFramework Action Rewards patch. Zero disables a reward. Wild Alpha and Predator kills exclude World Bosses through the matching WorldBossFramework patch. Tower and raid rewards follow native battle completion.</p><p class="shop-note">First captures are reconciled against server Paldex records. Five-capture rewards pay once per player and species when its server capture count reaches five; no Mimog/relic notification is required. Quests pay once per quest and player.</p><p class="shop-note">Dungeon clear means defeating the dungeon’s Alpha boss. It uses the dungeon rate instead of also paying the ordinary Alpha rate. World Boss purchase numbers are assigned by ServerShopFramework; use !shop worldboss to see them.</p></section><section><h3>Core reward reminders</h3><label>Reminder interval in seconds (0 disables)<input type="number" min="0" step="1" data-core-reminder value="${e(state.coreReminder)}"></label><div class="shop-controls">${button('Copy Core reminder setting','copy-core-reminder')}</div><p class="shop-note">Merge this setting into PixelsPalmodCore’s settings.config. It is separate from the Shop configuration. Reminders run on the minute clock.</p></section>`;
       return;
     }
     $('shop-form').innerHTML=`<div class="shop-controls">${button('Duplicate Offer','duplicate-offer')}${button('Remove Offer','remove-offer')}</div><div class="shop-fields">${field('Offer ID','id',o.id)}${flag('Enabled','enabled',o.enabled)}${field('Display name','name',o.name,'text','maxlength="80"')}${field('Category','category',o.category,'text','maxlength="48"')}${field('Description','description',o.description,'text','maxlength="300"')}${field('Purchase limit (0 = unlimited)','max_purchases',o.max_purchases,'number','min="0" max="1000000" step="1"')}${field('Purchase cooldown (seconds)','cooldown_seconds',o.cooldown_seconds,'number','min="0" max="31536000" step="1"')}</div>${rows(o,'costs')}${rows(o,'rewards')}<p class="shop-note">Title and custom rewards require their corresponding server provider. World Boss summons are contributed by WorldBossFramework; configure those on the World Boss page.</p>`;
@@ -48,7 +48,6 @@
     text(state.settings.currency_name,32,'Currency name');
     if(!state.settings.currency_name.trim())errors.push('Currency name is required.');
     int(state.settings.starting_balance,0,9000000000000,'Starting Credits'); int(state.settings.page_size,1,10,'Page size');
-    int(state.settings['action_rewards.dungeon.credits'],0,0,'Dungeon completion is unsupported; its Credits');
     for(const [id,label] of actionRules)int(state.settings[`action_rewards.${id}.credits`],0,1000000000,label+' Credits');
     for(const uid of state.settings.currency_admin_uids.split(/\s+/).filter(Boolean))if(!/^[a-fA-F0-9]{32}$/.test(uid)||/^\d+$/.test(uid))errors.push(`Admin UID ${uid} is invalid or numeric-only (Palladium would coerce it to a number); use permission grants for numeric-only UIDs`);
     for(const o of state.offers) {
@@ -85,7 +84,7 @@
     // No quoting or inline comments: the installed Palladium parser retains them as literal text.
     const lines=['; ServerShopFramework v1.0.0 settings — generated by Palworld Config Generator'];
     const put=(k,v)=>lines.push(`${k} = ${String(v).trim()}`);
-    for(const k of ['currency_name','starting_balance','page_size','allow_free_offers'])put(k,state.settings[k]);
+    for(const k of ['currency_name','starting_balance','page_size','allow_free_offers','announce_currency_acquisition','transfers_enabled'])put(k,state.settings[k]);
     state.settings.currency_admin_uids.split(/\s+/).filter(Boolean).forEach((v,i)=>put(`currency_admin_uids.${i+1}`,v.toUpperCase()));
     for(const k of Object.keys(actionDefaults()))put(k,state.settings[k]);
     lines.push(...state.extra);
@@ -140,13 +139,21 @@
   $('shop-form').addEventListener('submit',ev=>ev.preventDefault());
   $('shop-form').addEventListener('input',ev=>{
     const el=ev.target,o=selected(),row=el.closest('[data-index]');
+    if(el.hasAttribute('data-core-reminder')){state.coreReminder=el.value;return;}
     if(el.dataset.row&&row&&o){const r=o[row.dataset.section][Number(row.dataset.index)];r[el.dataset.row==='customKind'?'kind':el.dataset.row]=el.value==='custom'?'custom_provider':el.value;if(el.dataset.row==='kind')r.level=r.kind==='pal'?'1':'0';}
-    else if(el.dataset.key){const target=o||state.settings;target[el.dataset.key]=['enabled','allow_free_offers','action_rewards.enabled','action_rewards.announce','action_rewards.worldboss_installed'].includes(el.dataset.key)?el.value==='true':el.value;}
+    else if(el.dataset.key){const target=o||state.settings;target[el.dataset.key]=['enabled','allow_free_offers','announce_currency_acquisition','transfers_enabled','action_rewards.enabled','action_rewards.announce','action_rewards.worldboss_installed'].includes(el.dataset.key)?el.value==='true':el.value;}
     else return;dirty();renderList();
   });
   $('shop-form').addEventListener('change',ev=>{if(ev.target.dataset.row==='kind')render();});
-  $('shop-form').addEventListener('click',ev=>{
-    const b=ev.target.closest('[data-action]'),o=selected();if(!b||!o)return;
+  $('shop-form').addEventListener('click',async ev=>{
+    const b=ev.target.closest('[data-action]'),o=selected();if(!b)return;
+    if(b.dataset.action==='copy-core-reminder'){
+      const n=Number(state.coreReminder);
+      if(state.coreReminder.trim()===''||!Number.isSafeInteger(n)||n<0){notice('Enter a nonnegative whole reminder interval.');return;}
+      const line=`pending_reward_reminder_seconds = ${n}\n`;
+      try{notice(await copy(line)?'Core reminder setting copied. Merge into PixelsPalmodCore settings.config.':line);}catch(_){notice(line);}return;
+    }
+    if(!o)return;
     const row=b.closest('[data-index]');const section=b.dataset.section||row?.dataset.section;const index=Number(row?.dataset.index);
     switch(b.dataset.action){
       case 'duplicate-offer':{const clone=JSON.parse(JSON.stringify(o));clone.uid=++serial;let id=o.id+'_copy';let n=2;while(state.offers.some(x=>x.id.toLowerCase()===id.toLowerCase()))id=o.id+'_copy_'+n++;clone.id=id;state.offers.splice(state.offers.indexOf(o)+1,0,clone);state.selected=clone.uid;break;}
@@ -157,6 +164,11 @@
     }dirty();render();
   });
   $('shop-list').addEventListener('click',ev=>{const b=ev.target.closest('[data-offer]');if(b){state.selected=Number(b.dataset.offer);render();}});
+  const actionButton=document.createElement('button');
+  actionButton.type='button';actionButton.className=$('shop-settings').className;
+  actionButton.id='shop-action-settings';actionButton.textContent='Action Rewards';
+  $('shop-settings').insertAdjacentElement('afterend',actionButton);
+  actionButton.onclick=()=>{state.selected=null;render();$('shop-action-rewards').scrollIntoView({block:'start'});};
   $('shop-settings').onclick=()=>{state.selected=null;render();};
   $('shop-add').onclick=()=>{const o=offer();while(state.offers.some(x=>x.id===o.id))o.id=`offer_${++serial}`;state.offers.push(o);state.selected=o.uid;dirty();render();};
   $('shop-search').oninput=ev=>{state.filter=ev.target.value;renderList();};

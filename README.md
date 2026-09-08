@@ -71,12 +71,16 @@ Install the generated file over **ServerShopFramework's active settings.config**
 
 New source files: `generator-core.js` (shared navigation/utilities), `shop.js` (Shop editor), `shop.css` (additive styling). No deployed site, build dependency or server process is included. JavaScript syntax and source compatibility were reviewed; browser interaction and live server imports remain to be verified.
 
-## Action reward settings
+## Shop refactor settings
 
-Open Server Shop → Shop settings. Enable action rewards, choose Credits for each action (0 disables it), and choose whether to announce grants. Export to the live ServerShopFramework settings.config. Existing server settings are not automatically overwritten by an example file update.
+Shop settings now include Credit acquisition announcements, Credit transfers, all action rates including dungeon Alpha defeats, and a separate Core reminder interval control. The latter copies a setting to merge into **PixelsPalmodCore/settings.config**; it is deliberately not written into the Shop settings file.
 
-Alpha/Predator kills use the native boss classifiers and WorldBossFramework membership exclusion. Tower/raid rewards use native battle completion paths. First-capture rewards use the native capture callback and per-species capture record. Main and side quests pay once per player and quest. Capture completion uses the game's capture-relic notification; it does not invent a reward at every multiple of five. Dedicated-server callback visibility still needs live validation.
+World Boss purchase numbers have no input field. ServerShopFramework enumerates configured WorldBossFramework summon offers in deterministic internal-key order and assigns 1 through N. Use `!shop worldboss` to see the numbers. Changing the configured catalogue can change numbers; temporary boss availability does not.
 
-Dungeon completion has no verified hook in the inspected SDK. Importing a nonzero dungeon action rate blocks generation. See ACTION_REWARDS.md in the server source package for exact hooks, attribution, duplicate protection and live limitations.
+First-capture handling uses the server Paldex-registration event and bounded record reconciliation. The five-capture route pays once per player and species when the authoritative capture count crosses from below five to five or more. No relic notification is required. Dungeon clear means defeat of the dungeon’s Alpha boss and uses the dungeon rate instead of the ordinary Alpha rate.
 
-The existing World Boss editor, shared reference database, buttons, member lists and styles are retained. No deployment is included.
+Source validation is complete; live game validation is still required. Existing World Boss editor code, styles, buttons, member lists and reference data are preserved. No site deployment is included.
+
+## Corrective-3 controls
+
+Use **Server Shop → Action Rewards** to open action settings directly from any selected offer. **Defeat dungeon Alpha / clear dungeon — Credits** exports `action_rewards.dungeon.credits`; zero disables the reward. Existing styles and World Boss controls are preserved.
