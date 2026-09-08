@@ -40,3 +40,33 @@ No server process, package installation, or build step is required.
 - Automatic spawners are immediately due the first time the framework activates; their first spawn has no countdown.
 - `auto_enabled` and `shop_offer_enabled` are mutually exclusive. Shop-only spawners never receive an automatic timer, and automatic spawners are never registered as shop offers.
 - The generator accepts retired `queue_order` and `shop_reset_schedule` keys when importing older files, but discards them and never writes them to generated output.
+
+## Server Shop page — 2026-09-08
+
+Select **Server Shop** in the top navigation. Both pages use the same loaded Palworld reference database and application utilities. Switching pages retains both editors' in-memory edits; export your files before closing or refreshing the browser.
+
+This page targets the preserved **ServerShopFramework v1.0.0** configuration schema, not the older v0.2.1 standalone archive. It adds:
+
+- Shop settings for Credits display name, starting balance, chat page size, free offers, and optional currency-admin UIDs.
+- Searchable offers with add, duplicate, remove, enable/disable, category, purchase limit, and cooldown controls.
+- Currency, item, and active-party Pal costs; currency, item, Pal, title, and registered custom-provider rewards.
+- Item and Pal ID suggestions from the same database used by the World Boss editor. Use `Money` for Gold Coins and `DogCoin` for Dog Coins; Credits use `kind = currency`.
+- Load, validate, generate, copy, and download `settings.config`. Invalid known settings block generation. Unknown item/Pal IDs produce warnings because mods can add IDs. Custom provider availability must be checked on the server.
+
+New offers start disabled. Imported missing `enabled` values use the runtime's enabled-by-default behavior. An intentionally empty offer list exports `offers =` to override bundled default offers; it does not remove offers contributed by other frameworks.
+
+Boss summon offers remain on the **World Boss → Shop** panel. They are contributed to ServerShopFramework by WorldBossFramework and must not be re-created as static Shop offers. Action-trigger grants and leaderboards are not included in this version.
+
+### Configuration compatibility
+
+Palladium's inspected `parse_settings` function interprets plain dotted assignments, booleans and numbers, with all settings before the first section header. It **does not unquote strings or remove inline comments**. The Shop exporter therefore emits plain single-line values. Do not add quotation marks around names or append inline comments to numbers. Offer IDs use letters, digits and underscores, starting with a letter or underscore: this avoids dot nesting, unsupported hyphens in settings keys, and numeric-key coercion.
+
+The importer preserves additional settings and permission sections, including `[nodes]`; it does not silently replace your permissions. It rejects duplicate or conflicting scalar/nested assignments. Known cost/reward aliases (`count`, `item`, `species`, `title`) are normalized to `amount` and `id` using the runtime's precedence. Comments and original formatting are not retained. Additional unknown settings are retained with a review notice, not validated against future runtime schemas. Numeric-only admin UIDs cannot round-trip through Palladium's numeric coercion; use its permission grants instead.
+
+Install the generated file over **ServerShopFramework's active settings.config**, commonly `ue4ss/Mods/Palladium/mods/ServerShopFramework/settings.config`; installations using the flat fallback keep it beside the mod. Confirm the active location in your installed Palladium logs. The target code reads settings as they are used; changing starting balance affects newly created balances, not existing balances.
+
+### Preserved editor styling
+
+`styles.css` and `data.js` are byte-for-byte unchanged from the preserved independent-spawner generator. New styling is isolated in `shop.css`; the original World Boss buttons, member lists and layout rules are retained. `app.js` uses the shared HTML escaping utility and skips resize calculations while its page is hidden, preserving the user's panel widths across navigation.
+
+New source files: `generator-core.js` (shared navigation/utilities), `shop.js` (Shop editor), `shop.css` (additive styling). No deployed site, build dependency or server process is included. JavaScript syntax and source compatibility were reviewed; browser interaction and live server imports remain to be verified.

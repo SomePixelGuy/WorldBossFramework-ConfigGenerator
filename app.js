@@ -127,12 +127,7 @@
     spawnerFilter: ""
   };
 
-  const escapeHtml = (value) => String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  const escapeHtml = window.GeneratorCore.escapeHtml;
 
   const selectedSpawner = () => state.spawners.find((spawner) => spawner.uid === state.selectedUid) || null;
   const valueAttr = (value) => escapeHtml(value ?? "");
@@ -1373,7 +1368,7 @@
     }
 
     function setPanelWidth(kind, requestedWidth) {
-      if (!wideLayout.matches) return;
+      if (!wideLayout.matches || workspaceElement.hidden) return;
       const current = sizes();
       const otherWidth = kind === "spawner" ? current.output : current.spawner;
       const minimum = kind === "spawner" ? 230 : 300;
@@ -1424,7 +1419,7 @@
     });
 
     window.addEventListener("resize", () => {
-      if (!wideLayout.matches) return;
+      if (!wideLayout.matches || workspaceElement.hidden) return;
       const current = sizes();
       setPanelWidth("spawner", current.spawner);
       setPanelWidth("output", current.output);

@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Build and validate WorldBossFramework spawners.config files in your browser.">
-  <title>World Boss Config Generator</title>
+  <title>Palworld Config Generator</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="shop.css">
 </head>
 <body>
   <header class="topbar">
@@ -16,15 +17,22 @@
         <h1>Spawner Config Generator</h1>
       </div>
     </div>
-    <div class="topbar-actions">
+    <nav class="generator-pages" aria-label="Config generator"><button type="button" class="button button-secondary" id="page-worldboss" aria-pressed="true">World Boss</button><button type="button" class="button button-secondary" id="page-shop" aria-pressed="false">Server Shop</button></nav>
+    <div class="topbar-actions" id="worldboss-actions">
       <input id="config-file" type="file" accept=".config,.txt,text/plain" hidden>
       <button class="button button-secondary" id="load-config" type="button">Load spawners.config</button>
       <button class="button button-primary" id="generate-top" type="button">Generate Config</button>
       <button class="button button-secondary" id="copy-config-top" type="button">Copy Config Text</button>
     </div>
+    <div class="topbar-actions" id="shop-actions" hidden>
+      <input id="shop-file" type="file" accept=".config,.txt,text/plain" hidden>
+      <button type="button" class="button button-secondary" id="shop-load">Load settings.config</button>
+      <button type="button" class="button button-primary" id="shop-generate-top">Generate Config</button>
+      <button type="button" class="button button-secondary" id="shop-copy-top">Copy Config Text</button>
+    </div>
   </header>
 
-  <main class="workspace">
+  <main class="workspace" id="worldboss-page">
     <aside class="panel spawner-panel" aria-label="Configured spawners">
       <div class="panel-heading">
         <div>
@@ -97,6 +105,28 @@
     </aside>
   </main>
 
+  <main id="shop-page" class="shop-workspace" hidden>
+    <aside class="panel shop-sidebar" aria-label="Shop offers">
+      <div class="panel-heading"><h2>Shop offers</h2><button type="button" class="button button-secondary button-small" id="shop-add">Add Offer</button></div>
+      <button type="button" class="button button-secondary" id="shop-settings">Shop settings</button>
+      <label class="spawner-search">Search offers<input id="shop-search" type="search" placeholder="ID, name, category, item or Pal"></label>
+      <div id="shop-list" class="shop-list"></div>
+    </aside>
+    <section class="editor-panel" aria-label="Shop editor"><div class="editor-heading"><h2 id="shop-title">Shop settings</h2></div><form id="shop-form" novalidate></form></section>
+    <aside class="panel output-panel" aria-label="Generated shop configuration">
+      <div class="panel-heading"><h2>settings.config</h2></div>
+      <div id="shop-validation" class="validation-results" role="status">Edit Shop settings or add an offer.</div>
+      <label class="sr-only" for="shop-output">Generated Server Shop settings.config</label>
+      <textarea id="shop-output" readonly spellcheck="false" placeholder="Validated shop configuration will appear here."></textarea>
+      <div class="output-actions">
+        <button type="button" class="button button-primary button-wide" id="shop-generate">Generate Config</button>
+        <button type="button" class="button button-secondary button-wide" id="shop-copy">Copy Config Text</button>
+        <button type="button" class="button button-secondary button-wide" id="shop-download" disabled>Download settings.config</button>
+      </div>
+      <p class="restart-note">Target: ServerShopFramework v1.0.0. Replace its active <code>settings.config</code>. Boss summon offers remain configured on the World Boss page.</p>
+    </aside>
+  </main>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <datalist id="pal-options"></datalist>
@@ -105,6 +135,8 @@
   <datalist id="passive-skill-options"></datalist>
 
   <script src="data.js"></script>
+  <script src="generator-core.js"></script>
   <script src="app.js"></script>
+  <script src="shop.js"></script>
 </body>
 </html>

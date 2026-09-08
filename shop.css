@@ -1,0 +1,22 @@
+/* Additive styles. Original styles.css and World Boss member/button styles remain intact. */
+#worldboss-page[hidden], #shop-page[hidden], #worldboss-actions[hidden], #shop-actions[hidden] { display:none !important; }
+.generator-pages { display:flex; gap:.4rem; flex-wrap:wrap; }
+.generator-pages [aria-pressed="true"] { border-color:var(--cyan); color:var(--cyan); }
+.shop-workspace { display:grid; grid-template-columns:minmax(230px, .7fr) minmax(420px,1.6fr) minmax(280px,1fr); gap:1rem; padding:1rem; align-items:start; }
+.shop-sidebar { display:flex; flex-direction:column; max-height:calc(100vh - 120px); min-height:0; }
+.shop-list { overflow-y:auto; min-height:0; padding:.65rem; display:grid; gap:.6rem; }
+.shop-list .shop-offer { text-align:left; white-space:normal; display:block; width:100%; overflow-wrap:anywhere; }
+.shop-offer small { display:block; color:var(--muted); }
+.shop-offer[aria-current="true"] { border-color:var(--cyan); }
+#shop-form { display:grid; gap:1rem; padding:1rem; }
+.shop-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; }
+.shop-fields label, .shop-line label { display:grid; gap:.3rem; min-width:0; }
+.shop-fields input, .shop-fields select, .shop-fields textarea, .shop-line input, .shop-line select { width:100%; min-width:0; }
+.shop-line { border:1px solid var(--line); border-radius:8px; padding:.7rem; margin:.6rem 0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem; }
+.shop-controls { display:flex; flex-wrap:wrap; gap:.5rem; margin:.6rem 0; }
+.shop-note { color:var(--muted); font-size:.9rem; }
+#shop-output { min-height:360px; width:100%; resize:vertical; }
+@media (max-width:1150px) { .shop-workspace { grid-template-columns:250px minmax(0,1fr); } .shop-workspace > .output-panel { grid-column:1/-1; } }
+@media (max-width:760px) { .shop-workspace { grid-template-columns:minmax(0,1fr); } .shop-sidebar { max-height:45vh; } .shop-fields,.shop-line { grid-template-columns:minmax(0,1fr); } }
+
+#shop-validation { white-space:pre-line; overflow-wrap:anywhere; }
