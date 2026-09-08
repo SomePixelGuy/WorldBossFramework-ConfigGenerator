@@ -55,7 +55,7 @@ This page targets the preserved **ServerShopFramework v1.0.0** configuration sch
 
 New offers start disabled. Imported missing `enabled` values use the runtime's enabled-by-default behavior. An intentionally empty offer list exports `offers =` to override bundled default offers; it does not remove offers contributed by other frameworks.
 
-Boss summon offers remain on the **World Boss → Shop** panel. They are contributed to ServerShopFramework by WorldBossFramework and must not be re-created as static Shop offers. Action-trigger grants and leaderboards are not included in this version.
+Boss summon offers remain on the **World Boss → Shop** panel. They are contributed to ServerShopFramework by WorldBossFramework and must not be re-created as static Shop offers. Shop settings now include configurable action-trigger Credits. These settings require the accompanying ServerShopFramework Action Rewards patch. Leaderboards remain excluded.
 
 ### Configuration compatibility
 
@@ -70,3 +70,13 @@ Install the generated file over **ServerShopFramework's active settings.config**
 `styles.css` and `data.js` are byte-for-byte unchanged from the preserved independent-spawner generator. New styling is isolated in `shop.css`; the original World Boss buttons, member lists and layout rules are retained. `app.js` uses the shared HTML escaping utility and skips resize calculations while its page is hidden, preserving the user's panel widths across navigation.
 
 New source files: `generator-core.js` (shared navigation/utilities), `shop.js` (Shop editor), `shop.css` (additive styling). No deployed site, build dependency or server process is included. JavaScript syntax and source compatibility were reviewed; browser interaction and live server imports remain to be verified.
+
+## Action reward settings
+
+Open Server Shop → Shop settings. Enable action rewards, choose Credits for each action (0 disables it), and choose whether to announce grants. Export to the live ServerShopFramework settings.config. Existing server settings are not automatically overwritten by an example file update.
+
+Alpha/Predator kills use the native boss classifiers and WorldBossFramework membership exclusion. Tower/raid rewards use native battle completion paths. First-capture rewards use the native capture callback and per-species capture record. Main and side quests pay once per player and quest. Capture completion uses the game's capture-relic notification; it does not invent a reward at every multiple of five. Dedicated-server callback visibility still needs live validation.
+
+Dungeon completion has no verified hook in the inspected SDK. Importing a nonzero dungeon action rate blocks generation. See ACTION_REWARDS.md in the server source package for exact hooks, attribution, duplicate protection and live limitations.
+
+The existing World Boss editor, shared reference database, buttons, member lists and styles are retained. No deployment is included.
