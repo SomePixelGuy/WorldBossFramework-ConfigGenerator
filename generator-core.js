@@ -17,13 +17,14 @@
     const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   window.GeneratorCore = Object.freeze({escapeHtml, data, name, copy, download});
-  for (const page of ['worldboss','shop']) document.getElementById(`page-${page}`).addEventListener('click', () => {
-    for (const other of ['worldboss','shop']) {
+  for (const page of ['worldboss','shop','titles','levels']) document.getElementById(`page-${page}`).addEventListener('click', () => {
+    for (const other of ['worldboss','shop','titles','levels']) {
       document.getElementById(`${other}-page`).hidden = page !== other;
       document.getElementById(`${other}-actions`).hidden = page !== other;
       document.getElementById(`page-${other}`).setAttribute('aria-pressed', String(page === other));
     }
-    document.querySelector('.brand h1').textContent = page === 'shop' ? 'Server Shop Config Generator' : 'Spawner Config Generator';
+    document.querySelector('.brand h1').textContent = ({worldboss:'Spawner Config Generator',shop:'Server Shop Config Generator',titles:'Player Title Config Generator',levels:'Level Up Announcements & Rewards'})[page];
+    document.querySelector('.brand .eyebrow').textContent = ({worldboss:'WorldBossFramework',shop:'ServerShopFramework',titles:'PlayerTitleFramework',levels:'LevelUpAnnouncements'})[page];
     window.dispatchEvent(new Event('resize'));
   });
 })();

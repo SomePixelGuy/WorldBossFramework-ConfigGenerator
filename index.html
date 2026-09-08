@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build and validate WorldBossFramework spawners.config files in your browser.">
+  <meta name="description" content="Build and validate configs for World Boss, Server Shop, Player Titles, and Level Up rewards.">
   <title>Palworld Config Generator</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="shop.css">
+  <link rel="stylesheet" href="progression.css">
 </head>
 <body>
   <header class="topbar">
@@ -17,7 +18,7 @@
         <h1>Spawner Config Generator</h1>
       </div>
     </div>
-    <nav class="generator-pages" aria-label="Config generator"><button type="button" class="button button-secondary" id="page-worldboss" aria-pressed="true">World Boss</button><button type="button" class="button button-secondary" id="page-shop" aria-pressed="false">Server Shop</button></nav>
+    <nav class="generator-pages" aria-label="Config generator"><button type="button" class="button button-secondary" id="page-worldboss" aria-pressed="true">World Boss</button><button type="button" class="button button-secondary" id="page-shop" aria-pressed="false">Server Shop</button><button type="button" class="button button-secondary" id="page-titles" aria-pressed="false">Player Titles</button><button type="button" class="button button-secondary" id="page-levels" aria-pressed="false">Level Up &amp; Rewards</button></nav>
     <div class="topbar-actions" id="worldboss-actions">
       <input id="config-file" type="file" accept=".config,.txt,text/plain" hidden>
       <button class="button button-secondary" id="load-config" type="button">Load spawners.config</button>
@@ -29,6 +30,18 @@
       <button type="button" class="button button-secondary" id="shop-load">Load settings.config</button>
       <button type="button" class="button button-primary" id="shop-generate-top">Generate Config</button>
       <button type="button" class="button button-secondary" id="shop-copy-top">Copy Config Text</button>
+    </div>
+<div class="topbar-actions" id="titles-actions" hidden>
+      <input id="titles-file" type="file" accept=".config,.txt,text/plain" hidden>
+      <button type="button" class="button button-secondary" id="titles-load">Load settings.config</button>
+      <button type="button" class="button button-primary" id="titles-generate-top">Generate Config</button>
+      <button type="button" class="button button-secondary" id="titles-copy-top">Copy Config Text</button>
+    </div>
+<div class="topbar-actions" id="levels-actions" hidden>
+      <input id="levels-file" type="file" accept=".config,.txt,text/plain" hidden>
+      <button type="button" class="button button-secondary" id="levels-load">Load settings.config</button>
+      <button type="button" class="button button-primary" id="levels-generate-top">Generate Config</button>
+      <button type="button" class="button button-secondary" id="levels-copy-top">Copy Config Text</button>
     </div>
   </header>
 
@@ -127,6 +140,50 @@
     </aside>
   </main>
 
+  <main id="titles-page" class="shop-workspace progression-workspace" hidden>
+    <aside class="panel shop-sidebar" aria-label="Player Titles">
+      <div class="panel-heading"><h2>Player Titles</h2><button type="button" class="button button-secondary button-small" id="titles-add">Add Title</button></div>
+      <button type="button" class="button button-secondary" id="titles-settings">Settings</button>
+      <label class="spawner-search">Search<input id="titles-search" type="search" placeholder="Title ID or name"></label>
+      <div id="titles-list" class="shop-list"></div>
+    </aside>
+    <section class="editor-panel" aria-label="Player Titles editor"><div class="editor-heading"><h2 id="titles-title">Settings</h2></div><form id="titles-form" class="progression-form" novalidate></form></section>
+    <aside class="panel output-panel" aria-label="Player Titles output">
+      <div class="panel-heading"><h2>settings.config</h2></div>
+      <div id="titles-validation" class="validation-results progression-validation" role="status">Edit settings or add an entry.</div>
+      <label class="sr-only" for="titles-output">Generated PlayerTitleFramework settings.config</label>
+      <textarea id="titles-output" class="progression-output" readonly spellcheck="false"></textarea>
+      <div class="output-actions">
+        <button type="button" class="button button-primary button-wide" id="titles-generate">Generate Config</button>
+        <button type="button" class="button button-secondary button-wide" id="titles-copy">Copy Config Text</button>
+        <button type="button" class="button button-secondary button-wide" id="titles-download" disabled>Download settings.config</button>
+      </div>
+      <p class="restart-note">Target: PlayerTitleFramework v1.0.0. Install as <code>ue4ss/Mods/Palladium/mods/PlayerTitleFramework/settings.config</code>. Rewards use <code>!claimrewards</code>.</p>
+    </aside>
+  </main>
+
+  <main id="levels-page" class="shop-workspace progression-workspace" hidden>
+    <aside class="panel shop-sidebar" aria-label="Level Up & Rewards">
+      <div class="panel-heading"><h2>Level Up & Rewards</h2><button type="button" class="button button-secondary button-small" id="levels-add">Add Milestone</button></div>
+      <button type="button" class="button button-secondary" id="levels-settings">Settings</button>
+      <label class="spawner-search">Search<input id="levels-search" type="search" placeholder="Level or message"></label>
+      <div id="levels-list" class="shop-list"></div>
+    </aside>
+    <section class="editor-panel" aria-label="Level Up & Rewards editor"><div class="editor-heading"><h2 id="levels-title">Settings</h2></div><form id="levels-form" class="progression-form" novalidate></form></section>
+    <aside class="panel output-panel" aria-label="Level Up & Rewards output">
+      <div class="panel-heading"><h2>settings.config</h2></div>
+      <div id="levels-validation" class="validation-results progression-validation" role="status">Edit settings or add an entry.</div>
+      <label class="sr-only" for="levels-output">Generated LevelUpAnnouncements settings.config</label>
+      <textarea id="levels-output" class="progression-output" readonly spellcheck="false"></textarea>
+      <div class="output-actions">
+        <button type="button" class="button button-primary button-wide" id="levels-generate">Generate Config</button>
+        <button type="button" class="button button-secondary button-wide" id="levels-copy">Copy Config Text</button>
+        <button type="button" class="button button-secondary button-wide" id="levels-download" disabled>Download settings.config</button>
+      </div>
+      <p class="restart-note">Target: LevelUpAnnouncements v1.0.0. Install as <code>ue4ss/Mods/Palladium/mods/LevelUpAnnouncements/settings.config</code>. Rewards use <code>!claimrewards</code>.</p>
+    </aside>
+  </main>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <datalist id="pal-options"></datalist>
@@ -138,5 +195,6 @@
   <script src="generator-core.js"></script>
   <script src="app.js"></script>
   <script src="shop.js"></script>
+  <script src="progression.js"></script>
 </body>
 </html>

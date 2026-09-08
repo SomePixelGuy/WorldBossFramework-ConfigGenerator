@@ -1,0 +1,7 @@
+/* New pages only: preserve the existing World Boss and Shop styles. */
+#titles-page[hidden], #levels-page[hidden], #titles-actions[hidden], #levels-actions[hidden] { display:none !important; }
+.progression-form { display:grid; gap:1rem; padding:1rem; }
+.progression-output { min-height:360px; width:100%; resize:vertical; }
+.progression-validation { white-space:pre-line; overflow-wrap:anywhere; }
+.progression-workspace .reward-name { grid-column:1/-1; color:var(--muted); margin:0; }
+.progression-workspace .shop-fields .full-width { grid-column:1/-1; }
